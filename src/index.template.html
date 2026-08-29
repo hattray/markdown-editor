@@ -210,14 +210,55 @@
     background: var(--bg);
   }
   #preview {
-    max-width: 760px;
+    max-width: var(--reader-width, 760px);
     width: 100%;
     margin: 0 auto;
     padding: 32px 40px 45vh;
+    min-width: 0;
   }
 
+  /* ── Table of contents (own column, right of the preview) ── */
+  #toc {
+    display: none;
+    flex: none;
+    width: 232px;
+    min-height: 0;
+    overflow-y: auto;
+    background: var(--bg);
+    border-left: 1px solid var(--border-soft);
+    padding: 26px 16px 26px 6px;
+    font-size: 12.5px;
+  }
+  body.toc-open #toc { display: block; }
+  body[data-view="edit"] #toc { display: none; }
+  @media (max-width: 900px) { body.toc-open #toc { display: none; } }
+  #toc .toc-title {
+    font-weight: 600;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    margin: 0 0 8px 10px;
+  }
+  #toc .toc-empty { color: var(--text-faint); font-size: 12px; margin-left: 10px; }
+  #toc a {
+    display: block;
+    color: var(--text-soft);
+    text-decoration: none;
+    padding: 3px 8px;
+    border-left: 2px solid var(--border-soft);
+    line-height: 1.45;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #toc a:hover { color: var(--text); border-left-color: var(--accent); background: var(--accent-soft); }
+  #toc a.d2 { padding-left: 20px; }
+  #toc a.d3 { padding-left: 32px; }
+  #toc a.d4 { padding-left: 44px; }
+
   /* ── Rendered markdown ───────────────────────── */
-  #preview { font-size: 14.5px; line-height: 1.65; color: var(--text); }
+  #preview { font-size: var(--reader-size, 14.5px); line-height: 1.65; color: var(--text); }
   #preview h1, #preview h2, #preview h3, #preview h4, #preview h5, #preview h6 {
     font-weight: 600;
     letter-spacing: -0.015em;
@@ -267,6 +308,100 @@
   #preview th, #preview td { border: 1px solid var(--border); padding: 6px 12px; text-align: left; }
   #preview th { background: var(--code-bg); font-weight: 600; }
   #preview del { color: var(--text-faint); }
+
+  /* ── GitHub callouts ─────────────────────────── */
+  #preview blockquote.callout {
+    border-left: 3px solid var(--co);
+    border-radius: 0 8px 8px 0;
+    background: var(--code-bg);
+    padding: 11px 15px;
+    color: var(--text);
+  }
+  #preview .callout-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 600;
+    font-size: 0.92em;
+    color: var(--co);
+    margin-bottom: 5px;
+  }
+  #preview .callout-title svg { width: 15px; height: 15px; flex: none; }
+  .callout-note      { --co: #2563eb; }
+  .callout-tip       { --co: #16a34a; }
+  .callout-important { --co: #9333ea; }
+  .callout-warning   { --co: #d97706; }
+  .callout-caution   { --co: #dc2626; }
+  [data-theme="dark"] .callout-note      { --co: #60a5fa; }
+  [data-theme="dark"] .callout-tip       { --co: #4ade80; }
+  [data-theme="dark"] .callout-important { --co: #c084fc; }
+  [data-theme="dark"] .callout-warning   { --co: #fbbf24; }
+  [data-theme="dark"] .callout-caution   { --co: #f87171; }
+
+  /* ── Syntax highlighting (github-flavored) ───── */
+  .hljs { color: var(--text); background: transparent; }
+  .hljs-comment, .hljs-quote { color: var(--text-faint); }
+  .hljs-keyword, .hljs-selector-tag, .hljs-doctag, .hljs-section, .hljs-template-tag, .hljs-deletion, .hljs-meta .hljs-keyword { color: #cf222e; }
+  .hljs-title, .hljs-title.class_, .hljs-title.function_ { color: #8250df; }
+  .hljs-attr, .hljs-attribute, .hljs-literal, .hljs-number, .hljs-operator, .hljs-variable, .hljs-selector-attr, .hljs-selector-class, .hljs-selector-id, .hljs-selector-pseudo, .hljs-meta { color: #0550ae; }
+  .hljs-string, .hljs-regexp, .hljs-addition, .hljs-meta .hljs-string { color: #116329; }
+  .hljs-built_in, .hljs-symbol, .hljs-type { color: #953800; }
+  .hljs-emphasis { font-style: italic; }
+  .hljs-strong { font-weight: 600; }
+  [data-theme="dark"] .hljs-keyword, [data-theme="dark"] .hljs-selector-tag, [data-theme="dark"] .hljs-doctag, [data-theme="dark"] .hljs-section, [data-theme="dark"] .hljs-template-tag, [data-theme="dark"] .hljs-deletion, [data-theme="dark"] .hljs-meta .hljs-keyword { color: #ff7b72; }
+  [data-theme="dark"] .hljs-title, [data-theme="dark"] .hljs-title.class_, [data-theme="dark"] .hljs-title.function_ { color: #d2a8ff; }
+  [data-theme="dark"] .hljs-attr, [data-theme="dark"] .hljs-attribute, [data-theme="dark"] .hljs-literal, [data-theme="dark"] .hljs-number, [data-theme="dark"] .hljs-operator, [data-theme="dark"] .hljs-variable, [data-theme="dark"] .hljs-selector-attr, [data-theme="dark"] .hljs-selector-class, [data-theme="dark"] .hljs-selector-id, [data-theme="dark"] .hljs-selector-pseudo, [data-theme="dark"] .hljs-meta { color: #79c0ff; }
+  [data-theme="dark"] .hljs-string, [data-theme="dark"] .hljs-regexp, [data-theme="dark"] .hljs-addition, [data-theme="dark"] .hljs-meta .hljs-string { color: #a5d6ff; }
+  [data-theme="dark"] .hljs-built_in, [data-theme="dark"] .hljs-symbol, [data-theme="dark"] .hljs-type { color: #ffa657; }
+
+  /* ── Math & diagrams ─────────────────────────── */
+  .katex-block { overflow-x: auto; margin: 0 0 0.9em; padding: 2px 0; }
+  #preview .katex { font-size: 1.08em; }
+  .math-err { color: var(--danger); font-family: var(--mono); font-size: 0.85em; }
+  .mermaid-block { margin: 0 0 0.9em; overflow-x: auto; text-align: center; }
+  .mermaid-block svg { max-width: 100%; height: auto; }
+  #preview pre.mermaid-err {
+    text-align: left;
+    border-color: var(--danger);
+    white-space: pre-wrap;
+    color: var(--text-soft);
+    font-size: 12px;
+  }
+
+  /* ── Reader popover ──────────────────────────── */
+  .popover-wrap { position: relative; display: inline-flex; flex: none; }
+  #reader-pop {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+    padding: 12px 14px 14px;
+    width: 224px;
+    z-index: 60;
+    display: none;
+    font-size: 12px;
+  }
+  #reader-pop.on { display: block; }
+  #reader-pop label { display: flex; justify-content: space-between; color: var(--text-soft); margin: 8px 0 5px; font-weight: 500; }
+  #reader-pop label:first-child { margin-top: 0; }
+  #reader-pop input[type="range"] { width: 100%; accent-color: var(--accent); }
+  #reader-pop .widths { display: flex; gap: 4px; }
+  #reader-pop .wbtn {
+    flex: 1;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-soft);
+    font: inherit;
+    font-size: 11px;
+    padding: 4px 0;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  #reader-pop .wbtn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .btn.toggled { border-color: var(--accent); color: var(--accent); }
 
   /* ── Status bar ──────────────────────────────── */
   footer {
@@ -323,6 +458,7 @@
     #preview { padding: 0; max-width: none; }
   }
 </style>
+<style>/*__KATEX_CSS__*/</style>
 </head>
 <body data-view="split">
 
@@ -348,6 +484,23 @@
     <span class="hide-sm">Download</span>
   </button>
   <button class="btn primary" id="btn-save" title="Save (Ctrl+S)">Save <kbd class="hint" id="save-kbd">⌘S</kbd></button>
+  <button class="btn icon" id="btn-toc" title="Table of contents">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+  </button>
+  <span class="popover-wrap">
+    <button class="btn icon" id="btn-reader" title="Reading options" style="font-size:12px;font-weight:600;">Aa</button>
+    <div id="reader-pop">
+      <label>Text size <span id="size-val">14px</span></label>
+      <input type="range" id="size-range" min="12" max="20" step="0.5">
+      <label>Line width</label>
+      <div class="widths">
+        <button class="wbtn" data-w="620">Narrow</button>
+        <button class="wbtn" data-w="760">Default</button>
+        <button class="wbtn" data-w="920">Wide</button>
+        <button class="wbtn" data-w="0">Full</button>
+      </div>
+    </div>
+  </span>
   <button class="btn icon" id="btn-theme" title="Toggle theme">
     <svg id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
@@ -359,6 +512,7 @@
     <textarea id="editor" spellcheck="false" placeholder="Type markdown here, or drop a .md file anywhere…"></textarea>
   </div>
   <div id="preview-pane"><article id="preview"></article></div>
+  <nav id="toc" aria-label="Table of contents"></nav>
 </main>
 
 <footer>
@@ -376,6 +530,9 @@
 
 <script>/*__MARKED__*/</script>
 <script>/*__PURIFY__*/</script>
+<script>/*__HLJS__*/</script>
+<script>/*__KATEX__*/</script>
+<script>/*__MERMAID__*/</script>
 <script>
 (() => {
   "use strict";
@@ -401,13 +558,208 @@
     }
   });
 
+  const escapeHtml = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+  /* Math is pulled out BEFORE markdown parsing (marked would mangle _ and *
+     inside TeX) and re-injected into the sanitized DOM afterwards. Private-use
+     characters make placeholders that survive marked untouched. */
+  const PH = (i) => "\uE000M" + i + "\uE001";
+  function extractMath(src) {
+    const math = [];
+    const out = [];
+    let inFence = false, fenceCh = "";
+    let disp = null, dispPrefix = "";
+    for (const rawLine of src.split("\n")) {
+      let line = rawLine;
+      if (disp) {
+        const close = line.indexOf("$$");
+        if (close === -1) { disp.push(line); continue; }
+        disp.push(line.slice(0, close));
+        math.push({ tex: disp.join("\n"), display: true });
+        out.push(dispPrefix + PH(math.length - 1) + line.slice(close + 2));
+        disp = null; dispPrefix = "";
+        continue;
+      }
+      const fm = line.match(/^\s{0,3}(`{3,}|~{3,})/);
+      if (fm) {
+        if (!inFence) { inFence = true; fenceCh = fm[1][0]; }
+        else if (fm[1][0] === fenceCh) inFence = false;
+        out.push(line); continue;
+      }
+      if (inFence) { out.push(line); continue; }
+      let res = "", j = 0, opened = false;
+      while (j < line.length) {
+        const c = line[j];
+        if (c === "`") {
+          let k = j; while (line[k] === "`") k++;
+          const run = k - j;
+          let m = k, close = -1;
+          while (m < line.length) {
+            if (line[m] === "`") { let m2 = m; while (line[m2] === "`") m2++; if (m2 - m === run) { close = m2; break; } m = m2; }
+            else m++;
+          }
+          if (close !== -1) { res += line.slice(j, close); j = close; } else { res += line.slice(j, k); j = k; }
+          continue;
+        }
+        if (c === "\\" && (line[j + 1] === "(" || line[j + 1] === "[")) {
+          const closer = line[j + 1] === "(" ? "\\)" : "\\]";
+          const end = line.indexOf(closer, j + 2);
+          if (end !== -1) { math.push({ tex: line.slice(j + 2, end), display: line[j + 1] === "[" }); res += PH(math.length - 1); j = end + 2; continue; }
+          res += c; j++; continue;
+        }
+        if (c === "$") {
+          if (line[j + 1] === "$") {
+            const end = line.indexOf("$$", j + 2);
+            if (end !== -1) { math.push({ tex: line.slice(j + 2, end), display: true }); res += PH(math.length - 1); j = end + 2; continue; }
+            disp = [line.slice(j + 2)]; dispPrefix = res; opened = true; break;
+          }
+          let end = -1;
+          for (let m = j + 1; m < line.length; m++) {
+            if (line[m] === "$") { if (line[m - 1] !== "\\" && line[m - 1] !== " " && m > j + 1) end = m; break; }
+          }
+          if (end !== -1 && line[j + 1] !== " ") {
+            const tex = line.slice(j + 1, end);
+            if (!/^[\d.,]*$/.test(tex)) { math.push({ tex, display: false }); res += PH(math.length - 1); j = end + 1; continue; }
+          }
+          res += c; j++; continue;
+        }
+        res += c; j++;
+      }
+      if (!opened) out.push(res);
+    }
+    if (disp) out.push(dispPrefix + "$$" + (disp.length ? "\n" : "") + disp.join("\n"));
+    return { src: out.join("\n"), math };
+  }
+
+  function injectMath(mathList) {
+    if (!mathList.length) return;
+    const walker = document.createTreeWalker(preview, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    let n;
+    while ((n = walker.nextNode())) { if (n.nodeValue.indexOf("\uE000") !== -1) nodes.push(n); }
+    for (const node of nodes) {
+      if (node.parentElement && node.parentElement.closest("code, pre")) continue;
+      const parts = node.nodeValue.split(/(\uE000M\d+\uE001)/);
+      const frag = document.createDocumentFragment();
+      for (const part of parts) {
+        const m = part.match(/^\uE000M(\d+)\uE001$/);
+        if (!m || !mathList[+m[1]]) { if (part) frag.appendChild(document.createTextNode(part)); continue; }
+        const item = mathList[+m[1]];
+        const holder = document.createElement(item.display ? "div" : "span");
+        if (item.display) holder.className = "katex-block";
+        let html;
+        try { html = katex.renderToString(item.tex, { displayMode: item.display, throwOnError: false }); }
+        catch (e) { html = '<span class="math-err">' + escapeHtml(item.tex) + "</span>"; }
+        holder.innerHTML = DOMPurify.sanitize(html, { USE_PROFILES: { html: true, mathMl: true, svg: true } });
+        frag.appendChild(holder);
+      }
+      node.parentNode.replaceChild(frag, node);
+    }
+  }
+
+  /* GitHub-style callouts: > [!NOTE] etc. */
+  const CALLOUT_META = {
+    note:      ["Note",      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'],
+    tip:       ["Tip",       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg>'],
+    important: ["Important", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="7" x2="12" y2="11"/><line x1="12" y1="14" x2="12.01" y2="14"/></svg>'],
+    warning:   ["Warning",   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'],
+    caution:   ["Caution",   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'],
+  };
+  function transformCallouts() {
+    preview.querySelectorAll("blockquote").forEach((bq) => {
+      const p = bq.firstElementChild;
+      if (!p || p.tagName !== "P" || !p.firstChild || p.firstChild.nodeType !== 3) return;
+      const m = p.firstChild.nodeValue.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/i);
+      if (!m) return;
+      const kind = m[1].toLowerCase();
+      p.firstChild.nodeValue = p.firstChild.nodeValue.slice(m[0].length);
+      if (!p.firstChild.nodeValue) p.firstChild.remove();
+      if (p.firstChild && p.firstChild.nodeName === "BR") p.firstChild.remove();
+      if (!p.hasChildNodes()) p.remove();
+      bq.classList.add("callout", "callout-" + kind);
+      const title = document.createElement("div");
+      title.className = "callout-title";
+      title.innerHTML = CALLOUT_META[kind][1] + CALLOUT_META[kind][0];
+      bq.prepend(title);
+    });
+  }
+
+  /* Code highlighting + mermaid diagrams */
+  let mermaidSeq = 0;
+  function initMermaid() {
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: theme === "dark" ? "dark" : "default",
+      fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif",
+    });
+  }
+  async function renderMermaidJobs(jobs) {
+    for (const { div, src } of jobs) {
+      const id = "mmd-" + (++mermaidSeq);
+      try {
+        const { svg } = await mermaid.render(id, src);
+        div.innerHTML = svg;
+      } catch (e) {
+        const leftover = document.getElementById("d" + id);
+        if (leftover) leftover.remove();
+        const pre = document.createElement("pre");
+        pre.className = "mermaid-err";
+        pre.textContent = src + "\n\n⚠ " + ((e && e.message) || "Mermaid could not render this diagram");
+        div.replaceChildren(pre);
+      }
+    }
+  }
+  function highlightAndDiagrams() {
+    preview.querySelectorAll("pre > code").forEach((code) => {
+      const lang = (code.className.match(/language-([\w-]+)/) || [])[1];
+      if (!lang || lang === "mermaid") return;
+      if (hljs.getLanguage(lang)) {
+        try {
+          code.innerHTML = hljs.highlight(code.textContent, { language: lang }).value;
+          code.classList.add("hljs");
+        } catch (e) { /* leave plain */ }
+      }
+    });
+    const jobs = [];
+    preview.querySelectorAll("pre > code.language-mermaid").forEach((code) => {
+      const div = document.createElement("div");
+      div.className = "mermaid-block";
+      const src = code.textContent;
+      code.parentElement.replaceWith(div);
+      jobs.push({ div, src });
+    });
+    if (jobs.length) renderMermaidJobs(jobs);
+  }
+
+  /* Table of contents */
+  const tocEl = $("toc");
+  function buildToc() {
+    const hs = preview.querySelectorAll("h1, h2, h3, h4");
+    const used = new Set();
+    let html = '<div class="toc-title">Contents</div>';
+    hs.forEach((h) => {
+      let id = h.textContent.trim().toLowerCase().replace(/[^\w\u00C0-\uFFFF]+/g, "-").replace(/^-+|-+$/g, "") || "section";
+      while (used.has(id)) id += "-";
+      used.add(id);
+      h.id = id;
+      html += '<a class="d' + h.tagName[1] + '" href="#' + id + '" data-id="' + id + '" title="' + escapeHtml(h.textContent) + '">' + escapeHtml(h.textContent) + "</a>";
+    });
+    if (!hs.length) html += '<div class="toc-empty">No headings yet</div>';
+    tocEl.innerHTML = html;
+  }
+
   function render() {
-    const html = DOMPurify.sanitize(marked.parse(editor.value));
-    preview.innerHTML = html;
+    const { src, math } = extractMath(editor.value);
+    preview.innerHTML = DOMPurify.sanitize(marked.parse(src));
+    injectMath(math);
+    transformCallouts();
+    highlightAndDiagrams();
     // mark task-list items so CSS can drop their bullets
     preview.querySelectorAll('li > input[type="checkbox"]').forEach((cb) => {
       cb.closest("li").classList.add("task");
     });
+    buildToc();
     updateStats();
   }
 
@@ -630,6 +982,68 @@
   });
   filenameEl.addEventListener("keydown", (e) => { if (e.key === "Enter") filenameEl.blur(); });
 
+  /* ── TOC toggle ─────────────────────────────── */
+  const TOC_KEY = "md-viewer-toc";
+  $("btn-toc").addEventListener("click", () => {
+    const on = document.body.classList.toggle("toc-open");
+    $("btn-toc").classList.toggle("toggled", on);
+    try { localStorage.setItem(TOC_KEY, on ? "1" : "0"); } catch (e) {}
+  });
+  try {
+    if (localStorage.getItem(TOC_KEY) === "1") {
+      document.body.classList.add("toc-open");
+      $("btn-toc").classList.add("toggled");
+    }
+  } catch (e) {}
+  tocEl.addEventListener("click", (e) => {
+    const a = e.target.closest("a[data-id]");
+    if (!a) return;
+    e.preventDefault();
+    const h = document.getElementById(a.dataset.id);
+    if (h) {
+      previewPane.scrollTop = h.getBoundingClientRect().top - previewPane.getBoundingClientRect().top + previewPane.scrollTop - 20;
+    }
+  });
+
+  /* ── Reader controls ────────────────────────── */
+  const READER_KEY = "md-viewer-reader";
+  const readerPop = $("reader-pop");
+  let reader = { size: 14.5, width: 760 };
+  try { Object.assign(reader, JSON.parse(localStorage.getItem(READER_KEY) || "{}")); } catch (e) {}
+  function applyReader() {
+    preview.style.setProperty("--reader-size", reader.size + "px");
+    preview.style.setProperty("--reader-width", reader.width ? reader.width + "px" : "100%");
+    $("size-val").textContent = reader.size + "px";
+    $("size-range").value = reader.size;
+    readerPop.querySelectorAll(".wbtn").forEach((b) => b.classList.toggle("active", +b.dataset.w === reader.width));
+  }
+  function saveReader() {
+    try { localStorage.setItem(READER_KEY, JSON.stringify(reader)); } catch (e) {}
+  }
+  $("btn-reader").addEventListener("click", (e) => {
+    e.stopPropagation();
+    readerPop.classList.toggle("on");
+    $("btn-reader").classList.toggle("toggled", readerPop.classList.contains("on"));
+  });
+  readerPop.addEventListener("click", (e) => e.stopPropagation());
+  document.addEventListener("click", () => {
+    readerPop.classList.remove("on");
+    $("btn-reader").classList.remove("toggled");
+  });
+  $("size-range").addEventListener("input", () => {
+    reader.size = +$("size-range").value;
+    applyReader();
+    saveReader();
+  });
+  readerPop.querySelectorAll(".wbtn").forEach((b) => {
+    b.addEventListener("click", () => {
+      reader.width = +b.dataset.w;
+      applyReader();
+      saveReader();
+    });
+  });
+  applyReader();
+
   /* ── View modes ─────────────────────────────── */
   document.querySelectorAll(".seg button").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -651,10 +1065,13 @@
     theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }
   applyTheme(theme);
+  initMermaid();
   $("btn-theme").addEventListener("click", () => {
     theme = theme === "dark" ? "light" : "dark";
     applyTheme(theme);
     try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+    initMermaid();   // mermaid bakes colors into its SVG, so re-render for the new theme
+    render();
   });
 
   /* ── Keyboard shortcuts ─────────────────────── */
@@ -701,14 +1118,41 @@ GitHub-flavored markdown, including:
 - [x] Task lists
 - [ ] Like this one
 
-> Blockquotes, horizontal rules, nested lists — all the usual suspects.
+> [!TIP]
+> Use the list button up top for a **table of contents**, and the **Aa** button to adjust text size and line width.
+
+### Syntax-highlighted code
 
 \`\`\`js
-// fenced code blocks too
+// fenced code blocks, now with highlighting
 function greet(name) {
   return \`Hello, \${name}!\`;
 }
 \`\`\`
+
+### Math
+
+Inline math like $E = mc^2$ works, and so do display equations:
+
+$$
+\\int_{-\\infty}^{\\infty} e^{-x^2}\\,dx = \\sqrt{\\pi}
+$$
+
+### Diagrams
+
+Mermaid code fences render as live diagrams:
+
+\`\`\`mermaid
+flowchart LR
+  A[Drop a .md file] --> B{Edit it?}
+  B -- yes --> C[Make changes] --> D[Save back to your device]
+  B -- no --> E[Just read]
+\`\`\`
+
+### Callouts
+
+> [!NOTE]
+> GitHub-style callouts — NOTE, TIP, IMPORTANT, WARNING, and CAUTION — all render properly.
 
 ---
 
