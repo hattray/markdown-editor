@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Markdown Editor</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --panel: #ffffff;
+    --border: #e4e4e7;
+    --border-soft: #ececef;
+    --text: #18181b;
+    --text-soft: #52525b;
+    --text-faint: #a1a1aa;
+    --accent: #2563eb;
+    --accent-soft: rgba(37, 99, 235, 0.08);
+    --code-bg: #f4f4f5;
+    --danger: #dc2626;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04);
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  [data-theme="dark"] {
+    --bg: #111113;
+    --panel: #18181b;
+    --border: #27272a;
+    --border-soft: #202023;
+    --text: #e4e4e7;
+    --text-soft: #a1a1aa;
+    --text-faint: #63636b;
+    --accent: #60a5fa;
+    --accent-soft: rgba(96, 165, 250, 0.10);
+    --code-bg: #1f1f23;
+    --danger: #f87171;
+    --shadow: none;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    letter-spacing: -0.006em;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Top bar ─────────────────────────────────── */
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+    padding: 8px 14px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex: none;
+  }
+  .brand {
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .brand svg { width: 16px; height: 16px; color: var(--accent); }
+
+  .filename-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    flex: 0 1 auto;
+  }
+  #filename {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--text-soft);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 3px 7px;
+    min-width: 60px;
+    max-width: 260px;
+    width: 16ch;
+    outline: none;
+  }
+  #filename:hover { border-color: var(--border); }
+  #filename:focus { border-color: var(--accent); background: var(--panel); color: var(--text); }
+  .dirty-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .dirty-dot.on { opacity: 1; }
+
+  .spacer { flex: 1; }
+
+  .seg {
+    display: flex;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2px;
+    gap: 2px;
+    flex: none;
+  }
+  .seg button {
+    border: none;
+    background: transparent;
+    color: var(--text-soft);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 11px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .seg button:hover { color: var(--text); }
+  .seg button.active {
+    background: var(--panel);
+    color: var(--text);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-soft);
+    padding: 3px 10px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex: none;
+  }
+  .btn:hover { border-color: var(--text-faint); }
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .btn.primary:hover { opacity: 0.9; }
+  [data-theme="dark"] .btn.primary { color: #0b1120; }
+  .btn.icon { padding: 5px 8px; }
+  .btn svg { width: 14px; height: 14px; }
+  kbd.hint {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    font-weight: 400;
+  }
+  .btn.primary kbd.hint { color: rgba(255,255,255,0.65); }
+  [data-theme="dark"] .btn.primary kbd.hint { color: rgba(11,17,32,0.6); }
+
+  /* ── Panes ───────────────────────────────────── */
+  main {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+  #editor-pane, #preview-pane {
+    flex: 1 1 50%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  #editor-pane { border-right: 1px solid var(--border); }
+  body[data-view="edit"] #preview-pane { display: none; }
+  body[data-view="edit"] #editor-pane { border-right: none; }
+  body[data-view="preview"] #editor-pane { display: none; }
+
+  #editor {
+    flex: 1;
+    width: 100%;
+    resize: none;
+    border: none;
+    outline: none;
+    background: var(--panel);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.7;
+    padding: 28px 32px 45vh;
+    tab-size: 2;
+  }
+  #editor::placeholder { color: var(--text-faint); }
+
+  #preview-pane {
+    overflow-y: auto;
+    background: var(--bg);
+  }
+  #preview {
+    max-width: 760px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 32px 40px 45vh;
+  }
+
+  /* ── Rendered markdown ───────────────────────── */
+  #preview { font-size: 14.5px; line-height: 1.65; color: var(--text); }
+  #preview h1, #preview h2, #preview h3, #preview h4, #preview h5, #preview h6 {
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.3;
+    margin: 1.6em 0 0.55em;
+  }
+  #preview > :first-child { margin-top: 0; }
+  #preview h1 { font-size: 1.75em; padding-bottom: 0.35em; border-bottom: 1px solid var(--border-soft); }
+  #preview h2 { font-size: 1.35em; padding-bottom: 0.3em; border-bottom: 1px solid var(--border-soft); }
+  #preview h3 { font-size: 1.15em; }
+  #preview h4 { font-size: 1em; }
+  #preview h5, #preview h6 { font-size: 0.9em; color: var(--text-soft); }
+  #preview p, #preview ul, #preview ol, #preview blockquote, #preview pre, #preview table { margin: 0 0 0.9em; }
+  #preview ul, #preview ol { padding-left: 1.6em; }
+  #preview li { margin: 0.25em 0; }
+  #preview li > ul, #preview li > ol { margin-bottom: 0; }
+  #preview li.task { list-style: none; margin-left: -1.4em; }
+  #preview li input[type="checkbox"] { margin-right: 0.45em; accent-color: var(--accent); vertical-align: -1px; }
+  #preview a { color: var(--accent); text-decoration: none; }
+  #preview a:hover { text-decoration: underline; }
+  #preview strong { font-weight: 600; }
+  #preview code {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    border: 1px solid var(--border-soft);
+    border-radius: 5px;
+    padding: 0.12em 0.35em;
+  }
+  #preview pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: 14px 16px;
+    overflow-x: auto;
+  }
+  #preview pre code { background: none; border: none; padding: 0; font-size: 12.5px; line-height: 1.6; }
+  #preview blockquote {
+    border-left: 3px solid var(--border);
+    padding: 0.1em 0 0.1em 1em;
+    color: var(--text-soft);
+  }
+  #preview blockquote > :last-child { margin-bottom: 0; }
+  #preview hr { border: none; border-top: 1px solid var(--border); margin: 2em 0; }
+  #preview img { max-width: 100%; border-radius: 8px; }
+  #preview table { border-collapse: collapse; width: 100%; font-size: 0.95em; display: block; overflow-x: auto; }
+  #preview th, #preview td { border: 1px solid var(--border); padding: 6px 12px; text-align: left; }
+  #preview th { background: var(--code-bg); font-weight: 600; }
+  #preview del { color: var(--text-faint); }
+
+  /* ── Status bar ──────────────────────────────── */
+  footer {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 5px 14px;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    font-size: 11.5px;
+    color: var(--text-faint);
+    font-family: var(--mono);
+  }
+  footer .spacer { flex: 1; }
+  #status { color: var(--text-soft); font-family: var(--sans); }
+
+  /* ── Drop overlay ────────────────────────────── */
+  #drop-overlay {
+    position: fixed;
+    inset: 0;
+    background: color-mix(in srgb, var(--bg) 75%, transparent);
+    backdrop-filter: blur(3px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    pointer-events: none;
+  }
+  #drop-overlay.on { display: flex; }
+  #drop-overlay .card {
+    border: 2px dashed var(--accent);
+    border-radius: 16px;
+    background: var(--panel);
+    padding: 42px 64px;
+    text-align: center;
+    color: var(--text);
+    font-weight: 500;
+  }
+  #drop-overlay .card .sub { color: var(--text-soft); font-weight: 400; font-size: 12.5px; margin-top: 6px; }
+
+  @media (max-width: 720px) {
+    body[data-view="split"] main { flex-direction: column; }
+    body[data-view="split"] #editor-pane { border-right: none; border-bottom: 1px solid var(--border); }
+    .hide-sm { display: none; }
+    #preview { padding: 20px 18px 40vh; }
+    #editor { padding: 18px 18px 40vh; }
+  }
+
+  @media print {
+    header, footer, #editor-pane, #drop-overlay { display: none !important; }
+    body { overflow: visible; }
+    #preview-pane { display: block !important; overflow: visible; }
+    #preview { padding: 0; max-width: none; }
+  }
+</style>
+</head>
+<body data-view="split">
+
+<header>
+  <span class="brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="M7 15V9l2.5 3L12 9v6"/><path d="M16 13l2 2 2-2"/><path d="M18 9v6"/></svg>
+    Markdown Editor
+  </span>
+  <span class="filename-wrap">
+    <input id="filename" value="untitled.md" spellcheck="false" autocomplete="off" title="File name (click to rename)">
+    <span class="dirty-dot" id="dirty-dot" title="Unsaved changes"></span>
+  </span>
+  <span class="spacer"></span>
+  <div class="seg" role="tablist" aria-label="View mode">
+    <button data-mode="edit">Edit</button>
+    <button data-mode="split" class="active">Split</button>
+    <button data-mode="preview">Preview</button>
+  </div>
+  <button class="btn" id="btn-new" title="New document">New</button>
+  <button class="btn" id="btn-open" title="Open a markdown file (Ctrl+O)">Open</button>
+  <button class="btn" id="btn-download" title="Download a copy">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <span class="hide-sm">Download</span>
+  </button>
+  <button class="btn primary" id="btn-save" title="Save (Ctrl+S)">Save <kbd class="hint" id="save-kbd">⌘S</kbd></button>
+  <button class="btn icon" id="btn-theme" title="Toggle theme">
+    <svg id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+  </button>
+</header>
+
+<main>
+  <div id="editor-pane">
+    <textarea id="editor" spellcheck="false" placeholder="Type markdown here, or drop a .md file anywhere…"></textarea>
+  </div>
+  <div id="preview-pane"><article id="preview"></article></div>
+</main>
+
+<footer>
+  <span id="stat-words">0 words</span>
+  <span id="stat-chars">0 chars</span>
+  <span id="stat-lines" class="hide-sm">1 line</span>
+  <span class="spacer"></span>
+  <span id="status"></span>
+  <span class="hide-sm">everything stays on your device</span>
+</footer>
+
+<div id="drop-overlay"><div class="card">Drop your markdown file<div class="sub">.md, .markdown or any text file — it never leaves your browser</div></div></div>
+
+<input type="file" id="file-input" accept=".md,.markdown,.mdown,.mkd,.txt,text/markdown,text/plain" style="display:none">
+
+<script>/*__MARKED__*/</script>
+<script>/*__PURIFY__*/</script>
+<script>
+(() => {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+  const editor = $("editor"), preview = $("preview"), previewPane = $("preview-pane");
+  const filenameEl = $("filename"), dirtyDot = $("dirty-dot"), statusEl = $("status");
+  const DRAFT_KEY = "md-editor-draft-v1";
+  const THEME_KEY = "md-editor-theme";
+  const isMac = /Mac|iPhone|iPad/.test(navigator.platform || "");
+  $("save-kbd").textContent = isMac ? "⌘S" : "Ctrl+S";
+
+  let fileHandle = null;     // FileSystemFileHandle when opened via picker/drop (Chromium)
+  let dirty = false;
+  let statusTimer = null;
+
+  /* ── Markdown rendering ─────────────────────── */
+  marked.use({ gfm: true, breaks: false });
+  DOMPurify.addHook("afterSanitizeAttributes", (node) => {
+    if (node.tagName === "A") {
+      node.setAttribute("target", "_blank");
+      node.setAttribute("rel", "noopener noreferrer");
+    }
+  });
+
+  function render() {
+    const html = DOMPurify.sanitize(marked.parse(editor.value));
+    preview.innerHTML = html;
+    // mark task-list items so CSS can drop their bullets
+    preview.querySelectorAll('li > input[type="checkbox"]').forEach((cb) => {
+      cb.closest("li").classList.add("task");
+    });
+    updateStats();
+  }
+
+  let renderTimer = null;
+  function scheduleRender() {
+    clearTimeout(renderTimer);
+    renderTimer = setTimeout(render, 120);
+  }
+
+  function updateStats() {
+    const text = editor.value;
+    const words = (text.trim().match(/\S+/g) || []).length;
+    $("stat-words").textContent = words + " word" + (words === 1 ? "" : "s");
+    $("stat-chars").textContent = text.length + " chars";
+    const lines = text.length ? text.split("\n").length : 1;
+    $("stat-lines").textContent = lines + " line" + (lines === 1 ? "" : "s");
+  }
+
+  function setStatus(msg, sticky) {
+    statusEl.textContent = msg;
+    clearTimeout(statusTimer);
+    if (!sticky) statusTimer = setTimeout(() => { statusEl.textContent = ""; }, 4000);
+  }
+
+  function setDirty(v) {
+    dirty = v;
+    dirtyDot.classList.toggle("on", v);
+  }
+
+  /* ── Draft persistence (localStorage) ───────── */
+  let draftTimer = null;
+  function saveDraft() {
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ name: filenameEl.value, text: editor.value }));
+      } catch (e) { /* storage unavailable — fine */ }
+    }, 400);
+  }
+  function loadDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return false;
+      const d = JSON.parse(raw);
+      if (typeof d.text !== "string" || !d.text.trim()) return false;
+      editor.value = d.text;
+      filenameEl.value = d.name || "untitled.md";
+      setStatus("Draft restored from this browser");
+      return true;
+    } catch (e) { return false; }
+  }
+
+  /* ── File loading ───────────────────────────── */
+  function loadContent(text, name, handle) {
+    editor.value = text.replace(/\r\n/g, "\n");
+    filenameEl.value = name || "untitled.md";
+    fileHandle = handle || null;
+    setDirty(false);
+    render();
+    saveDraft();
+    editor.scrollTop = 0;
+    previewPane.scrollTop = 0;
+    setStatus("Opened " + filenameEl.value + (fileHandle ? " — Save writes back to the original file" : ""));
+  }
+
+  async function openFromFile(file, handle) {
+    const text = await file.text();
+    loadContent(text, file.name, handle);
+  }
+
+  async function openPicker() {
+    if (window.showOpenFilePicker) {
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          types: [{ description: "Markdown", accept: { "text/markdown": [".md", ".markdown", ".mdown", ".mkd"], "text/plain": [".txt"] } }],
+          excludeAcceptAllOption: false,
+        });
+        await openFromFile(await handle.getFile(), handle);
+      } catch (e) { /* user cancelled */ }
+    } else {
+      $("file-input").click();
+    }
+  }
+  $("file-input").addEventListener("change", (e) => {
+    const f = e.target.files[0];
+    if (f) openFromFile(f, null);
+    e.target.value = "";
+  });
+
+  /* ── Saving ─────────────────────────────────── */
+  async function writeToHandle(handle) {
+    const writable = await handle.createWritable();
+    await writable.write(editor.value);
+    await writable.close();
+  }
+
+  async function save() {
+    if (fileHandle) {
+      try {
+        if (fileHandle.queryPermission && (await fileHandle.queryPermission({ mode: "readwrite" })) !== "granted") {
+          if ((await fileHandle.requestPermission({ mode: "readwrite" })) !== "granted") throw new Error("denied");
+        }
+        await writeToHandle(fileHandle);
+        setDirty(false);
+        setStatus("Saved to " + filenameEl.value);
+        return;
+      } catch (e) {
+        setStatus("Couldn't write to the original file — choose where to save it");
+      }
+    }
+    await saveAs();
+  }
+
+  async function saveAs() {
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: filenameEl.value || "untitled.md",
+          types: [{ description: "Markdown", accept: { "text/markdown": [".md"] } }],
+        });
+        await writeToHandle(handle);
+        fileHandle = handle;
+        filenameEl.value = handle.name;
+        setDirty(false);
+        setStatus("Saved to " + handle.name);
+      } catch (e) { /* user cancelled */ }
+    } else {
+      download();
+    }
+  }
+
+  function download() {
+    const blob = new Blob([editor.value], { type: "text/markdown;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filenameEl.value || "untitled.md";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    setDirty(false);
+    setStatus("Downloaded " + a.download);
+  }
+
+  /* ── New document ───────────────────────────── */
+  function newDoc() {
+    if (dirty && !confirm("Discard unsaved changes and start a new document?")) return;
+    fileHandle = null;
+    editor.value = "";
+    filenameEl.value = "untitled.md";
+    setDirty(false);
+    render();
+    try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+    editor.focus();
+  }
+
+  /* ── Drag & drop ────────────────────────────── */
+  const overlay = $("drop-overlay");
+  let dragDepth = 0;
+  window.addEventListener("dragenter", (e) => {
+    if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) {
+      dragDepth++;
+      overlay.classList.add("on");
+    }
+  });
+  window.addEventListener("dragleave", () => {
+    if (--dragDepth <= 0) { dragDepth = 0; overlay.classList.remove("on"); }
+  });
+  window.addEventListener("dragover", (e) => e.preventDefault());
+  window.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    dragDepth = 0;
+    overlay.classList.remove("on");
+    const item = e.dataTransfer.items && e.dataTransfer.items[0];
+    if (!item || item.kind !== "file") return;
+    // Prefer a real file handle so Save can write back to the dropped file.
+    if (item.getAsFileSystemHandle) {
+      try {
+        const handle = await item.getAsFileSystemHandle();
+        if (handle && handle.kind === "file") {
+          await openFromFile(await handle.getFile(), handle);
+          return;
+        }
+      } catch (err) { /* fall through to plain File */ }
+    }
+    const file = item.getAsFile();
+    if (file) await openFromFile(file, null);
+  });
+
+  /* ── Editor behaviour ───────────────────────── */
+  editor.addEventListener("input", () => {
+    setDirty(true);
+    scheduleRender();
+    saveDraft();
+  });
+
+  editor.addEventListener("keydown", (e) => {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const { selectionStart: s, selectionEnd: en } = editor;
+      editor.setRangeText("  ", s, en, "end");
+      editor.dispatchEvent(new Event("input"));
+    }
+  });
+
+  // proportional scroll sync: editor → preview
+  editor.addEventListener("scroll", () => {
+    if (document.body.dataset.view !== "split") return;
+    const eMax = editor.scrollHeight - editor.clientHeight;
+    const pMax = previewPane.scrollHeight - previewPane.clientHeight;
+    if (eMax > 0 && pMax > 0) previewPane.scrollTop = (editor.scrollTop / eMax) * pMax;
+  });
+
+  filenameEl.addEventListener("change", () => {
+    let name = filenameEl.value.trim() || "untitled.md";
+    if (!/\.(md|markdown|mdown|mkd|txt)$/i.test(name)) name += ".md";
+    filenameEl.value = name;
+    fileHandle = null; // renamed → next Save asks where to put it
+    saveDraft();
+  });
+  filenameEl.addEventListener("keydown", (e) => { if (e.key === "Enter") filenameEl.blur(); });
+
+  /* ── View modes ─────────────────────────────── */
+  document.querySelectorAll(".seg button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.body.dataset.view = btn.dataset.mode;
+      document.querySelectorAll(".seg button").forEach((b) => b.classList.toggle("active", b === btn));
+      if (btn.dataset.mode !== "preview") editor.focus();
+    });
+  });
+
+  /* ── Theme ──────────────────────────────────── */
+  function applyTheme(t) {
+    document.documentElement.dataset.theme = t;
+    $("icon-moon").style.display = t === "dark" ? "none" : "";
+    $("icon-sun").style.display = t === "dark" ? "" : "none";
+  }
+  let theme;
+  try { theme = localStorage.getItem(THEME_KEY); } catch (e) {}
+  if (theme !== "light" && theme !== "dark") {
+    theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  applyTheme(theme);
+  $("btn-theme").addEventListener("click", () => {
+    theme = theme === "dark" ? "light" : "dark";
+    applyTheme(theme);
+    try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+  });
+
+  /* ── Keyboard shortcuts ─────────────────────── */
+  window.addEventListener("keydown", (e) => {
+    const mod = isMac ? e.metaKey : e.ctrlKey;
+    if (!mod) return;
+    const k = e.key.toLowerCase();
+    if (k === "s") { e.preventDefault(); e.shiftKey ? saveAs() : save(); }
+    else if (k === "o") { e.preventDefault(); openPicker(); }
+  });
+
+  window.addEventListener("beforeunload", (e) => {
+    if (dirty) { e.preventDefault(); e.returnValue = ""; }
+  });
+
+  /* ── Buttons ────────────────────────────────── */
+  $("btn-open").addEventListener("click", openPicker);
+  $("btn-save").addEventListener("click", save);
+  $("btn-download").addEventListener("click", download);
+  $("btn-new").addEventListener("click", newDoc);
+
+  /* ── Boot ───────────────────────────────────── */
+  const WELCOME = `# Markdown Editor
+
+A fast, private markdown editor that runs entirely in your browser — **nothing you type or open ever leaves your device**.
+
+## Getting started
+
+- **Drop** a \`.md\` file anywhere on this page, or click **Open**
+- Type on the left, see the result on the right
+- **Save** writes straight back to the original file (Chrome & Edge) — elsewhere it downloads a copy
+- Your work is kept as a draft in this browser, so a refresh won't lose it
+
+## What it understands
+
+GitHub-flavored markdown, including:
+
+| Feature | Example |
+| ------- | ------- |
+| Emphasis | *italic*, **bold**, ~~strikethrough~~ |
+| Inline code | \`const x = 42\` |
+| Links | [ivystrides.com](https://www.ivystrides.com) |
+
+- [x] Task lists
+- [ ] Like this one
+
+> Blockquotes, horizontal rules, nested lists — all the usual suspects.
+
+\`\`\`js
+// fenced code blocks too
+function greet(name) {
+  return \`Hello, \${name}!\`;
+}
+\`\`\`
+
+---
+
+Shortcuts: **${isMac ? "⌘" : "Ctrl+"}S** save · **${isMac ? "⌘⇧" : "Ctrl+Shift+"}S** save as · **${isMac ? "⌘" : "Ctrl+"}O** open
+`;
+
+  if (!loadDraft()) editor.value = WELCOME;
+  render();
+  editor.focus();
+})();
+</script>
+</body>
+</html>
