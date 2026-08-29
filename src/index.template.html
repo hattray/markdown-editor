@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Markdown Editor</title>
+<title>Free MD Viewer — open, read & edit markdown files in your browser</title>
+<meta name="description" content="Free markdown viewer and editor that runs entirely in your browser. Drag & drop a .md file to read it beautifully rendered, edit it, and save it back — nothing is ever uploaded.">
 <style>
   :root {
     --bg: #fafafa;
@@ -328,7 +329,7 @@
 <header>
   <span class="brand">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="M7 15V9l2.5 3L12 9v6"/><path d="M16 13l2 2 2-2"/><path d="M18 9v6"/></svg>
-    Markdown Editor
+    Free MD Viewer
   </span>
   <span class="filename-wrap">
     <input id="filename" value="untitled.md" spellcheck="false" autocomplete="off" title="File name (click to rename)">
@@ -676,9 +677,9 @@
   $("btn-new").addEventListener("click", newDoc);
 
   /* ── Boot ───────────────────────────────────── */
-  const WELCOME = `# Markdown Editor
+  const WELCOME = `# Free MD Viewer
 
-A fast, private markdown editor that runs entirely in your browser — **nothing you type or open ever leaves your device**.
+A fast, private markdown viewer & editor that runs entirely in your browser — **nothing you type or open ever leaves your device**.
 
 ## Getting started
 
