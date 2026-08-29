@@ -403,6 +403,47 @@
   #reader-pop .wbtn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
   .btn.toggled { border-color: var(--accent); color: var(--accent); }
 
+  /* ── Export menu ─────────────────────────────── */
+  #export-pop {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+    padding: 4px;
+    width: 216px;
+    z-index: 60;
+    display: none;
+  }
+  #export-pop.on { display: block; }
+  #export-pop button {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 12.5px;
+    text-align: left;
+    padding: 7px 9px;
+    border-radius: 7px;
+    cursor: pointer;
+  }
+  #export-pop button:hover { background: var(--accent-soft); color: var(--accent); }
+  #export-pop button:disabled { opacity: 0.5; cursor: default; }
+  #export-pop button:disabled:hover { background: transparent; color: var(--text); }
+  #export-pop .ext {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text-faint);
+    margin-left: auto;
+  }
+  #export-pop .sep { height: 1px; background: var(--border-soft); margin: 4px 6px; }
+
   /* ── Status bar ──────────────────────────────── */
   footer {
     flex: none;
@@ -452,10 +493,21 @@
   }
 
   @media print {
-    header, footer, #editor-pane, #drop-overlay { display: none !important; }
-    body { overflow: visible; }
+    /* Always print on white — dark backgrounds waste ink and read badly. */
+    :root, :root[data-theme="dark"], :root[data-theme="light"] {
+      --bg: #ffffff; --panel: #ffffff; --text: #18181b; --text-soft: #52525b;
+      --text-faint: #71717a; --border: #d4d4d8; --border-soft: #e4e4e7;
+      --code-bg: #f6f6f7; --accent: #2563eb;
+    }
+    header, footer, #editor-pane, #drop-overlay, #toc, #reader-pop, #export-pop { display: none !important; }
+    html, body { height: auto; overflow: visible; display: block; }
+    main { display: block; }
     #preview-pane { display: block !important; overflow: visible; }
     #preview { padding: 0; max-width: none; }
+    #preview pre, #preview blockquote, #preview table, #preview img,
+    .mermaid-block, .katex-block { break-inside: avoid; }
+    #preview h1, #preview h2, #preview h3, #preview h4 { break-after: avoid; }
+    @page { margin: 16mm; }
   }
 </style>
 <style>/*__KATEX_CSS__*/</style>
@@ -479,10 +531,19 @@
   </div>
   <button class="btn" id="btn-new" title="New document">New</button>
   <button class="btn" id="btn-open" title="Open a markdown file (Ctrl+O)">Open</button>
-  <button class="btn" id="btn-download" title="Download a copy">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-    <span class="hide-sm">Download</span>
-  </button>
+  <span class="popover-wrap">
+    <button class="btn" id="btn-export" title="Export this document">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span class="hide-sm">Export</span>
+    </button>
+    <div id="export-pop">
+      <button data-exp="md">Markdown source <span class="ext">.md</span></button>
+      <div class="sep"></div>
+      <button data-exp="html">Rendered page <span class="ext">.html</span></button>
+      <button data-exp="png">Image of preview <span class="ext">.png</span></button>
+      <button data-exp="pdf">Print / Save as PDF <span class="ext">.pdf</span></button>
+    </div>
+  </span>
   <button class="btn primary" id="btn-save" title="Save (Ctrl+S)">Save <kbd class="hint" id="save-kbd">⌘S</kbd></button>
   <button class="btn icon" id="btn-toc" title="Table of contents">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
@@ -686,6 +747,7 @@
 
   /* Code highlighting + mermaid diagrams */
   let mermaidSeq = 0;
+  let mermaidPending = Promise.resolve();   // awaited by the PDF export
   function initMermaid() {
     mermaid.initialize({
       startOnLoad: false,
@@ -729,7 +791,7 @@
       code.parentElement.replaceWith(div);
       jobs.push({ div, src });
     });
-    if (jobs.length) renderMermaidJobs(jobs);
+    if (jobs.length) mermaidPending = renderMermaidJobs(jobs);
   }
 
   /* Table of contents */
@@ -891,17 +953,120 @@
     }
   }
 
-  function download() {
-    const blob = new Blob([editor.value], { type: "text/markdown;charset=utf-8" });
+  function saveBlob(blob, name) {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = filenameEl.value || "untitled.md";
+    a.download = name;
     document.body.appendChild(a);
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+
+  const baseName = () => (filenameEl.value || "untitled.md").replace(/\.[^.]+$/, "") || "untitled";
+
+  function download() {
+    const name = filenameEl.value || "untitled.md";
+    saveBlob(new Blob([editor.value], { type: "text/markdown;charset=utf-8" }), name);
     setDirty(false);
-    setStatus("Downloaded " + a.download);
+    setStatus("Downloaded " + name);
+  }
+
+  /* ── Exports ────────────────────────────────── */
+  const pageStyles = () => [...document.querySelectorAll("style")].map((s) => s.textContent).join("\n");
+
+  // Undo the app-shell layout so the exported document is a plain scrolling page.
+  const EXPORT_RESET =
+    "html,body{height:auto;overflow:visible;display:block}" +
+    "body{background:var(--bg);padding:40px 24px}" +
+    "#preview{margin:0 auto;padding:0}";
+
+  function exportHtml() {
+    const title = (preview.querySelector("h1") || {}).textContent || baseName();
+    const doc =
+      '<!DOCTYPE html>\n<html lang="en" data-theme="' + theme + '">\n<head>\n' +
+      '<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+      "<title>" + escapeHtml(title.trim()) + "</title>\n" +
+      "<style>" + pageStyles() + "</style>\n<style>" + EXPORT_RESET + "</style>\n" +
+      '</head>\n<body>\n<article id="preview" style="' + escapeHtml(preview.getAttribute("style") || "") + '">\n' +
+      preview.innerHTML +
+      "\n</article>\n</body>\n</html>\n";
+    saveBlob(new Blob([doc], { type: "text/html;charset=utf-8" }), baseName() + ".html");
+    setStatus("Exported " + baseName() + ".html — self-contained, opens anywhere");
+  }
+
+  /* PNG: serialize the preview into an SVG <foreignObject> and paint that onto a
+     canvas. Everything happens in-page; remote images can't load inside an SVG
+     used as an image, so they come out blank (data: URIs are fine). */
+  async function exportPng() {
+    const P = 36;
+    const holder = document.createElement("div");
+    holder.style.cssText = "position:fixed;left:-20000px;top:0;";
+    const clone = preview.cloneNode(true);
+    const width = Math.ceil(preview.getBoundingClientRect().width) || 760;
+    clone.setAttribute("style", (preview.getAttribute("style") || "") + ";padding:0;margin:0;max-width:none;width:" + width + "px");
+    holder.appendChild(clone);
+    document.body.appendChild(holder);
+    try {
+      const height = Math.ceil(clone.getBoundingClientRect().height);
+      const W = width + P * 2, H = height + P * 2;
+      if (H > 16000) {
+        setStatus("This document is too tall for a PNG — use Print / Save as PDF instead");
+        return;
+      }
+      // There is no <html>/<body> inside a foreignObject, so the theme attribute and
+      // the font/letter-spacing that normally come from <body> are set on the wrapper.
+      const bodyCss = getComputedStyle(document.body);
+      const bg = bodyCss.backgroundColor || "#ffffff";
+      const wrapStyle = "font-family:" + bodyCss.fontFamily + ";letter-spacing:" + bodyCss.letterSpacing + ";";
+      const body =
+        '<div xmlns="http://www.w3.org/1999/xhtml" data-theme="' + theme + '" style="' + escapeHtml(wrapStyle) + '">' +
+        "<style><![CDATA[" + pageStyles() +
+        // a scrollbar painted into a still image is just noise
+        "*{scrollbar-width:none}*::-webkit-scrollbar{display:none;width:0;height:0}]]></style>" +
+        new XMLSerializer().serializeToString(clone) + "</div>";
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '">' +
+        '<rect width="100%" height="100%" fill="' + bg + '"/>' +
+        '<foreignObject x="' + P + '" y="' + P + '" width="' + width + '" height="' + height + '">' +
+        body + "</foreignObject></svg>";
+
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = () => reject(new Error("the browser could not rasterize this document"));
+        img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+      });
+      const scale = H * (window.devicePixelRatio || 1) > 16000 ? 1 : Math.min(2, window.devicePixelRatio || 1);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(W * scale);
+      canvas.height = Math.round(H * scale);
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise((res) => canvas.toBlob(res, "image/png"));
+      if (!blob) throw new Error("the image could not be encoded");
+      saveBlob(blob, baseName() + ".png");
+      setStatus("Exported " + baseName() + ".png (" + canvas.width + "×" + canvas.height + ")");
+    } catch (e) {
+      setStatus("PNG export failed — " + (e.message || "unknown error") + ". Try Print / Save as PDF.");
+    } finally {
+      holder.remove();
+    }
+  }
+
+  /* PDF: the browser's own print-to-PDF, which yields real selectable text.
+     Mermaid bakes theme colors into its SVG, so print from the light theme. */
+  async function exportPdf() {
+    const wasDark = theme === "dark";
+    if (wasDark) {
+      setTheme("light", false);
+      await mermaidPending;
+    }
+    setStatus('Choose "Save as PDF" as the destination in the print dialog', true);
+    if (wasDark) window.addEventListener("afterprint", () => setTheme("dark", false), { once: true });
+    window.print();
   }
 
   /* ── New document ───────────────────────────── */
@@ -1029,6 +1194,8 @@
   document.addEventListener("click", () => {
     readerPop.classList.remove("on");
     $("btn-reader").classList.remove("toggled");
+    $("export-pop").classList.remove("on");
+    $("btn-export").classList.remove("toggled");
   });
   $("size-range").addEventListener("input", () => {
     reader.size = +$("size-range").value;
@@ -1066,13 +1233,15 @@
   }
   applyTheme(theme);
   initMermaid();
-  $("btn-theme").addEventListener("click", () => {
-    theme = theme === "dark" ? "light" : "dark";
-    applyTheme(theme);
-    try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
-    initMermaid();   // mermaid bakes colors into its SVG, so re-render for the new theme
+  // mermaid bakes colors into its SVG, so a theme change means a full re-render
+  function setTheme(t, persist) {
+    theme = t;
+    applyTheme(t);
+    if (persist) { try { localStorage.setItem(THEME_KEY, t); } catch (e) {} }
+    initMermaid();
     render();
-  });
+  }
+  $("btn-theme").addEventListener("click", () => setTheme(theme === "dark" ? "light" : "dark", true));
 
   /* ── Keyboard shortcuts ─────────────────────── */
   window.addEventListener("keydown", (e) => {
@@ -1090,8 +1259,21 @@
   /* ── Buttons ────────────────────────────────── */
   $("btn-open").addEventListener("click", openPicker);
   $("btn-save").addEventListener("click", save);
-  $("btn-download").addEventListener("click", download);
   $("btn-new").addEventListener("click", newDoc);
+
+  const exportPop = $("export-pop");
+  $("btn-export").addEventListener("click", (e) => {
+    e.stopPropagation();
+    exportPop.classList.toggle("on");
+    $("btn-export").classList.toggle("toggled", exportPop.classList.contains("on"));
+  });
+  exportPop.addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-exp]");
+    if (!b) return;
+    exportPop.classList.remove("on");
+    $("btn-export").classList.remove("toggled");
+    ({ md: download, html: exportHtml, png: exportPng, pdf: exportPdf })[b.dataset.exp]();
+  });
 
   /* ── Boot ───────────────────────────────────── */
   const WELCOME = `# Free MD Viewer
@@ -1103,6 +1285,7 @@ A fast, private markdown viewer & editor that runs entirely in your browser — 
 - **Drop** a \`.md\` file anywhere on this page, or click **Open**
 - Type on the left, see the result on the right
 - **Save** writes straight back to the original file (Chrome & Edge) — elsewhere it downloads a copy
+- **Export** the rendered document as a self-contained \`.html\` page, a \`.png\` image, or a PDF
 - Your work is kept as a draft in this browser, so a refresh won't lose it
 
 ## What it understands
