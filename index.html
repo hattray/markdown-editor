@@ -5072,6 +5072,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     setDirty(false);
     render();
     saveDraft();
+    editor.setSelectionRange(0, 0);
     editor.scrollTop = 0;
     previewPane.scrollTop = 0;
     setStatus("Opened " + filenameEl.value + (fileHandle ? " — Save writes back to the original file" : ""));
@@ -5582,7 +5583,13 @@ Shortcuts: **${isMac ? "⌘" : "Ctrl+"}S** save · **${isMac ? "⌘⇧" : "Ctrl+
 
   if (!loadDraft()) editor.value = WELCOME;
   render();
-  editor.focus();
+  // Focusing a textarea leaves the caret at the end of its text and scrolls
+  // there, which would open the document at its last line (and drag the
+  // preview along with it, via the scroll sync). Start at the top instead.
+  if (document.body.dataset.view !== "preview") editor.focus();
+  editor.setSelectionRange(0, 0);
+  editor.scrollTop = 0;
+  previewPane.scrollTop = 0;
 })();
 </script>
 </body>
