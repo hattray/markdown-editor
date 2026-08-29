@@ -36,3 +36,9 @@ for marker, path in [("/*__MARKED__*/", "vendor/marked.min.js"),
 Path("index.html").write_text(tpl)
 print(f"built index.html ({len(tpl):,} bytes)")
 PY
+
+# The repo root is the deployable folder: the single-file app plus the PWA
+# sidecars (manifest, service worker, icons) that make it installable and
+# let it register as a handler for .md files.
+cp pwa/manifest.json pwa/sw.js pwa/icon-192.png pwa/icon-512.png pwa/icon-maskable-512.png .
+echo "copied PWA files (manifest, service worker, icons)"

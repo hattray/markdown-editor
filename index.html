@@ -6,6 +6,10 @@
 <meta name="color-scheme" content="light dark">
 <title>Free MD Viewer — open, read & edit markdown files in your browser</title>
 <meta name="description" content="Free markdown viewer and editor that runs entirely in your browser. Drag & drop a .md file to read it beautifully rendered, edit it, and save it back — nothing is ever uploaded.">
+<meta name="theme-color" content="#2563eb">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
   :root {
     --bg: #fafafa;
@@ -354,11 +358,40 @@
   [data-theme="dark"] .hljs-string, [data-theme="dark"] .hljs-regexp, [data-theme="dark"] .hljs-addition, [data-theme="dark"] .hljs-meta .hljs-string { color: #a5d6ff; }
   [data-theme="dark"] .hljs-built_in, [data-theme="dark"] .hljs-symbol, [data-theme="dark"] .hljs-type { color: #ffa657; }
 
+  /* ── Per-block download tools ────────────────── */
+  .blk-tools {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.12s;
+    z-index: 2;
+  }
+  .mermaid-block:hover .blk-tools, .table-wrap:hover .blk-tools,
+  .blk-tools:focus-within { opacity: 1; }
+  .blk-tools button {
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text-soft);
+    cursor: pointer;
+  }
+  .blk-tools button:hover { color: var(--accent); border-color: var(--accent); }
+  .table-wrap { position: relative; margin: 0 0 0.9em; }
+  .table-wrap table { margin: 0; }
+
   /* ── Math & diagrams ─────────────────────────── */
   .katex-block { overflow-x: auto; margin: 0 0 0.9em; padding: 2px 0; }
   #preview .katex { font-size: 1.08em; }
   .math-err { color: var(--danger); font-family: var(--mono); font-size: 0.85em; }
-  .mermaid-block { margin: 0 0 0.9em; overflow-x: auto; text-align: center; }
+  .mermaid-block { position: relative; margin: 0 0 0.9em; overflow-x: auto; text-align: center; }
   .mermaid-block svg { max-width: 100%; height: auto; }
   #preview pre.mermaid-err {
     text-align: left;
@@ -499,7 +532,8 @@
       --text-faint: #71717a; --border: #d4d4d8; --border-soft: #e4e4e7;
       --code-bg: #f6f6f7; --accent: #2563eb;
     }
-    header, footer, #editor-pane, #drop-overlay, #toc, #reader-pop, #export-pop { display: none !important; }
+    header, footer, #editor-pane, #drop-overlay, #toc, #reader-pop, #export-pop,
+    .blk-tools { display: none !important; }
     html, body { height: auto; overflow: visible; display: block; }
     main { display: block; }
     #preview-pane { display: block !important; overflow: visible; }
@@ -4821,11 +4855,16 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     });
   }
   async function renderMermaidJobs(jobs) {
+    let n = 0;
     for (const { div, src } of jobs) {
       const id = "mmd-" + (++mermaidSeq);
+      n++;
+      const index = n;
       try {
         const { svg } = await mermaid.render(id, src);
         div.innerHTML = svg;
+        const el = div.querySelector("svg");
+        if (el) div.appendChild(toolButton("SVG", "Download this diagram as SVG", () => downloadDiagramSvg(el, index)));
       } catch (e) {
         const leftover = document.getElementById("d" + id);
         if (leftover) leftover.remove();
@@ -4858,6 +4897,61 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     if (jobs.length) mermaidPending = renderMermaidJobs(jobs);
   }
 
+  /* Per-block downloads: a diagram as SVG, a table as CSV. */
+  function toolButton(label, title, onClick) {
+    const wrap = document.createElement("div");
+    wrap.className = "blk-tools";
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = label;
+    b.title = title;
+    b.addEventListener("click", onClick);
+    wrap.appendChild(b);
+    return wrap;
+  }
+
+  function downloadDiagramSvg(svg, n) {
+    const clone = svg.cloneNode(true);
+    clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    clone.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+    // mermaid emits width="100%" and sizes itself with CSS; a standalone file
+    // needs real pixel dimensions, which the viewBox gives us intrinsically.
+    const box = svg.getBoundingClientRect();
+    const vb = (clone.getAttribute("viewBox") || "").split(/[\s,]+/).map(Number);
+    const w = vb.length === 4 && vb[2] ? vb[2] : box.width;
+    const h = vb.length === 4 && vb[3] ? vb[3] : box.height;
+    clone.setAttribute("width", Math.round(w));
+    clone.setAttribute("height", Math.round(h));
+    clone.style.maxWidth = "";
+    const text = '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(clone);
+    saveBlob(new Blob([text], { type: "image/svg+xml;charset=utf-8" }), baseName() + "-diagram-" + n + ".svg");
+    setStatus("Exported diagram " + n + " as SVG");
+  }
+
+  const csvCell = (s) => (/[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s);
+  function downloadTableCsv(table, n) {
+    const rows = [...table.querySelectorAll("tr")].map((tr) =>
+      [...tr.querySelectorAll("th, td")].map((c) => csvCell(c.textContent.trim())).join(",")
+    );
+    // the BOM makes Excel read it as UTF-8 rather than mangling accents
+    saveBlob(new Blob(["﻿" + rows.join("\r\n")], { type: "text/csv;charset=utf-8" }),
+      baseName() + "-table-" + n + ".csv");
+    setStatus("Exported table " + n + " as CSV (" + rows.length + " rows)");
+  }
+
+  function addTableTools() {
+    let n = 0;
+    preview.querySelectorAll("table").forEach((table) => {
+      n++;
+      const index = n;
+      const wrap = document.createElement("div");
+      wrap.className = "table-wrap";
+      table.replaceWith(wrap);
+      wrap.appendChild(table);
+      wrap.appendChild(toolButton("CSV", "Download this table as CSV", () => downloadTableCsv(table, index)));
+    });
+  }
+
   /* Table of contents */
   const tocEl = $("toc");
   function buildToc() {
@@ -4885,6 +4979,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     preview.querySelectorAll('li > input[type="checkbox"]').forEach((cb) => {
       cb.closest("li").classList.add("task");
     });
+    addTableTools();
     buildToc();
     updateStats();
   }
@@ -5045,6 +5140,13 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     "body{background:var(--bg);padding:40px 24px}" +
     "#preview{margin:0 auto;padding:0}";
 
+  // a copy of the rendered document without the hover download buttons
+  function cleanPreviewClone() {
+    const clone = preview.cloneNode(true);
+    clone.querySelectorAll(".blk-tools").forEach((n) => n.remove());
+    return clone;
+  }
+
   function exportHtml() {
     const title = (preview.querySelector("h1") || {}).textContent || baseName();
     const doc =
@@ -5053,7 +5155,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
       "<title>" + escapeHtml(title.trim()) + "</title>\n" +
       "<style>" + pageStyles() + "</style>\n<style>" + EXPORT_RESET + "</style>\n" +
       '</head>\n<body>\n<article id="preview" style="' + escapeHtml(preview.getAttribute("style") || "") + '">\n' +
-      preview.innerHTML +
+      cleanPreviewClone().innerHTML +
       "\n</article>\n</body>\n</html>\n";
     saveBlob(new Blob([doc], { type: "text/html;charset=utf-8" }), baseName() + ".html");
     setStatus("Exported " + baseName() + ".html — self-contained, opens anywhere");
@@ -5066,7 +5168,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     const P = 36;
     const holder = document.createElement("div");
     holder.style.cssText = "position:fixed;left:-20000px;top:0;";
-    const clone = preview.cloneNode(true);
+    const clone = cleanPreviewClone();
     const width = Math.ceil(preview.getBoundingClientRect().width) || 760;
     clone.setAttribute("style", (preview.getAttribute("style") || "") + ";padding:0;margin:0;max-width:none;width:" + width + "px");
     holder.appendChild(clone);
@@ -5339,6 +5441,30 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     ({ md: download, html: exportHtml, png: exportPng, pdf: exportPdf })[b.dataset.exp]();
   });
 
+  /* ── Installed-app plumbing ─────────────────── */
+  // Registering a service worker makes the app installable and lets it open
+  // offline. It is skipped when the file is opened straight from disk.
+  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+  }
+
+  // When the installed app is launched by opening a .md file (double-click,
+  // "Open with"), we receive real file handles — so Save writes back to that
+  // very file, exactly like the drag-and-drop path.
+  if ("launchQueue" in window && typeof LaunchParams !== "undefined" && "files" in LaunchParams.prototype) {
+    launchQueue.setConsumer(async (params) => {
+      if (!params.files || !params.files.length) return;
+      try {
+        const handle = params.files[0];
+        await openFromFile(await handle.getFile(), handle);
+      } catch (e) {
+        setStatus("Could not open that file — " + (e.message || "unknown error"));
+      }
+    });
+  }
+
   /* ── Boot ───────────────────────────────────── */
   const WELCOME = `# Free MD Viewer
 
@@ -5350,6 +5476,7 @@ A fast, private markdown viewer & editor that runs entirely in your browser — 
 - Type on the left, see the result on the right
 - **Save** writes straight back to the original file (Chrome & Edge) — elsewhere it downloads a copy
 - **Export** the rendered document as a self-contained \`.html\` page, a \`.png\` image, or a PDF
+- **Install it** (Chrome & Edge) and \`.md\` files open here on double-click, even offline
 - Your work is kept as a draft in this browser, so a refresh won't lose it
 
 ## What it understands
@@ -5366,7 +5493,7 @@ GitHub-flavored markdown, including:
 - [ ] Like this one
 
 > [!TIP]
-> Use the list button up top for a **table of contents**, and the **Aa** button to adjust text size and line width.
+> Use the list button up top for a **table of contents**, and the **Aa** button to adjust text size and line width. Hover a table or a diagram to download it on its own.
 
 ### Syntax-highlighted code
 

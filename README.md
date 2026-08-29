@@ -23,6 +23,8 @@ that can be opened straight from disk or dropped onto any static host.
   - `.html` — the rendered document as one self-contained file, styles and KaTeX fonts embedded
   - `.png` — the preview rasterized via an SVG `<foreignObject>` painted onto a canvas, at up to 2× device scale. Remote images can't load inside an SVG-as-image, so they come out blank; `data:` URIs are fine
   - PDF — the browser's own print-to-PDF, so the text stays selectable. Printing forces the light palette (and temporarily switches the app to light first, since Mermaid bakes theme colors into its SVG)
+- **Per-block downloads** — hover a Mermaid diagram for an `SVG` button (real dimensions taken from its viewBox, not mermaid's `width="100%"`), or a table for a `CSV` button (RFC-style quoting, UTF-8 BOM so Excel reads accents correctly)
+- **Installable (Chrome/Edge desktop)** — a service worker plus a manifest declaring `file_handlers`, so once installed, double-clicking a `.md` file opens it here. The launch handle is a real `FileSystemFileHandle`, so Save writes straight back to the file you opened. Works offline
 - **Table of contents** — toggleable panel built from headings, click to jump
 - **Reader controls** — text size and line width (Aa button), persisted
 - **Sanitized rendering** — untrusted markdown can't inject script (DOMPurify, including over KaTeX output)
@@ -40,9 +42,15 @@ vendor/highlight.min.js   code highlighting    (highlight.js v11, BSD-3)
 vendor/katex.min.js|css   math rendering       (KaTeX v0.16, MIT)
 vendor/katex-fonts/       KaTeX woff2 fonts — embedded as data: URIs at build time
 vendor/mermaid.min.js     diagrams             (Mermaid v11, MIT)
-build.sh                  inlines the vendor libs + fonts into the template
+pwa/                      manifest.json, sw.js and the icons (the PWA sidecars)
+tools/make-icons.py       regenerates the icons — no image libraries needed
+build.sh                  inlines the vendor libs + fonts, then copies pwa/ to the root
 index.html                the built, self-contained deliverable (committed)
 ```
+
+The repo root is the deployable folder: `index.html` is the whole app, and the
+`manifest.json` / `sw.js` / `icon-*.png` beside it are only needed for the
+installable-app behavior. Serving `index.html` alone still works everywhere.
 
 After editing `src/index.template.html`, run:
 
