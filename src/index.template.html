@@ -234,8 +234,38 @@
     font-size: 12.5px;
   }
   body.toc-open #toc { display: block; }
-  body[data-view="edit"] #toc { display: none; }
-  @media (max-width: 900px) { body.toc-open #toc { display: none; } }
+
+  /* There is no room for a third column on a phone, so the contents becomes a
+     slide-over drawer with a tap-anywhere backdrop. */
+  #toc-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 69;
+  }
+  @media (max-width: 900px) {
+    body.toc-open #toc {
+      display: block;
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: min(300px, 84vw);
+      z-index: 70;
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.2);
+      padding: 16px 12px calc(16px + env(safe-area-inset-bottom, 0px));
+      font-size: 14px;
+      overscroll-behavior: contain;
+    }
+    body.toc-open #toc a { padding: 9px 10px; }   /* finger-sized tap targets */
+    body.toc-open #toc-backdrop { display: block; }
+  }
+
+  /* Nothing to jump to while the preview is hidden — keep this last so it wins. */
+  body[data-view="edit"] #toc, body[data-view="edit"] #toc-backdrop { display: none; }
   #toc .toc-title {
     font-weight: 600;
     font-size: 10.5px;
@@ -607,6 +637,7 @@
     <textarea id="editor" spellcheck="false" placeholder="Type markdown here, or drop a .md file anywhere…"></textarea>
   </div>
   <div id="preview-pane"><article id="preview"></article></div>
+  <div id="toc-backdrop"></div>
   <nav id="toc" aria-label="Table of contents"></nav>
 </main>
 
@@ -1251,25 +1282,36 @@
 
   /* ── TOC toggle ─────────────────────────────── */
   const TOC_KEY = "md-viewer-toc";
-  $("btn-toc").addEventListener("click", () => {
-    const on = document.body.classList.toggle("toc-open");
+  const isDrawer = () => matchMedia("(max-width: 900px)").matches;
+
+  function setToc(on) {
+    document.body.classList.toggle("toc-open", on);
     $("btn-toc").classList.toggle("toggled", on);
-    try { localStorage.setItem(TOC_KEY, on ? "1" : "0"); } catch (e) {}
+  }
+  $("btn-toc").addEventListener("click", (e) => {
+    e.stopPropagation();
+    const on = !document.body.classList.contains("toc-open");
+    setToc(on);
+    try { localStorage.setItem(TOC_KEY, on ? "1" : "0"); } catch (e2) {}
   });
+  // Don't restore an open contents panel on a phone — it would cover the page on load.
   try {
-    if (localStorage.getItem(TOC_KEY) === "1") {
-      document.body.classList.add("toc-open");
-      $("btn-toc").classList.add("toggled");
-    }
+    if (localStorage.getItem(TOC_KEY) === "1" && !isDrawer()) setToc(true);
   } catch (e) {}
+
+  $("toc-backdrop").addEventListener("click", () => setToc(false));
+
   tocEl.addEventListener("click", (e) => {
     const a = e.target.closest("a[data-id]");
     if (!a) return;
     e.preventDefault();
     const h = document.getElementById(a.dataset.id);
     if (h) {
-      previewPane.scrollTop = h.getBoundingClientRect().top - previewPane.getBoundingClientRect().top + previewPane.scrollTop - 20;
+      // In split view on a phone the preview may be scrolled out of sight itself.
+      if (isDrawer() && document.body.dataset.view === "split") h.scrollIntoView({ block: "start" });
+      else previewPane.scrollTop = h.getBoundingClientRect().top - previewPane.getBoundingClientRect().top + previewPane.scrollTop - 20;
     }
+    if (isDrawer()) setToc(false);
   });
 
   /* ── Reader controls ────────────────────────── */
@@ -1314,13 +1356,18 @@
   applyReader();
 
   /* ── View modes ─────────────────────────────── */
+  function setView(mode) {
+    document.body.dataset.view = mode;
+    document.querySelectorAll(".seg button").forEach((b) => b.classList.toggle("active", b.dataset.mode === mode));
+  }
   document.querySelectorAll(".seg button").forEach((btn) => {
     btn.addEventListener("click", () => {
-      document.body.dataset.view = btn.dataset.mode;
-      document.querySelectorAll(".seg button").forEach((b) => b.classList.toggle("active", b === btn));
+      setView(btn.dataset.mode);
       if (btn.dataset.mode !== "preview") editor.focus();
     });
   });
+  // A side-by-side split is unreadable on a phone, and reading is the common case there.
+  if (isDrawer()) setView("preview");
 
   /* ── Theme ──────────────────────────────────── */
   function applyTheme(t) {
