@@ -1,65 +1,116 @@
 # Free MD Viewer
 
-A single-file, browser-based markdown viewer & editor, live at
-**[kingsbridge-consultancy.com/md-viewer](https://kingsbridge-consultancy.com/md-viewer/)**.
-Drag a `.md` file onto the page (or click **Open**), edit on the left, see the rendered result
-live on the right. **Everything stays on the client** — no server, no upload, and zero network
-requests at runtime (all libraries and fonts are embedded).
+A markdown viewer and editor that runs entirely in your browser. **Your files stay on
+your machine** — there is no upload endpoint, no account, and no server-side rendering.
 
-The whole app is one self-contained `index.html` (~3.6 MB raw, ~1 MB compressed over the wire)
-that can be opened straight from disk or dropped onto any static host.
+**Live at [kingsbridge-consultancy.com/md-viewer](https://kingsbridge-consultancy.com/md-viewer/)**
+
+Drop a `.md` file on the page (or click **Open**), read it properly rendered, edit it with a
+live preview, and save it straight back to disk. The whole app is one self-contained
+`index.html` (~3.6 MB, ~1 MB over the wire) with every library and font embedded, so you can
+also save the page and run it offline from `file://`.
+
+## Why
+
+Markdown files are everywhere now — every AI tool hands you one — but double-clicking a `.md`
+file still gets you a wall of raw text, and most online viewers upload your document to a
+server to render it. For work documents and private notes, that's a real cost of a "free"
+tool. This renders locally instead.
+
+The claim is checkable rather than promised: everything is inlined, so open devtools and watch
+the network tab, or read the source with view-source. Only the vendor libraries are minified —
+the app's own code ships readable.
 
 ## Features
 
 - **Drag & drop** or file-picker open; accepts `.md`, `.markdown`, `.txt`
-- **Live split preview** (Edit / Split / Preview modes) with scroll sync
-- **Save writes back to the original file** via the File System Access API (Chrome/Edge — works for both picked and dropped files); Save-As and a plain **Download** fallback everywhere else
+- **Live split preview** (Edit / Split / Preview modes) with scroll sync; phones open in Preview
+- **Save writes back to the original file** via the File System Access API (Chrome/Edge — works
+  for both picked and dropped files); Save-As and a plain download fallback everywhere else
 - **GitHub-flavored markdown**: tables, task lists, strikethrough, fenced code blocks
 - **Syntax highlighting** in code fences (highlight.js, GitHub-style palette for both themes)
 - **Mermaid diagrams** from ` ```mermaid ` fences, theme-aware (re-rendered on dark/light toggle)
-- **LaTeX math** via KaTeX: `$inline$`, `$$display$$`, `\(...\)`, `\[...\]` — math is extracted *before* markdown parsing so underscores/asterisks in TeX survive, and `$` inside code spans/fences is left alone
+- **LaTeX math** via KaTeX: `$inline$`, `$$display$$`, `\(...\)`, `\[...\]` — math is extracted
+  *before* markdown parsing so underscores/asterisks in TeX survive, and `$` inside code spans
+  and fences is left alone
 - **GitHub callouts**: `> [!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`
-- **Export** (all generated in-page, nothing uploaded):
+- **Export** (all generated in-page, nothing uploaded, no watermarks or limits):
   - `.html` — the rendered document as one self-contained file, styles and KaTeX fonts embedded
-  - `.png` — the preview rasterized via an SVG `<foreignObject>` painted onto a canvas, at up to 2× device scale. Remote images can't load inside an SVG-as-image, so they come out blank; `data:` URIs are fine
-  - PDF — the browser's own print-to-PDF, so the text stays selectable. Printing forces the light palette (and temporarily switches the app to light first, since Mermaid bakes theme colors into its SVG)
-- **Per-block downloads** — hover a Mermaid diagram for an `SVG` button (real dimensions taken from its viewBox, not mermaid's `width="100%"`), or a table for a `CSV` button (RFC-style quoting, UTF-8 BOM so Excel reads accents correctly)
-- **Installable (Chrome/Edge desktop)** — a service worker plus a manifest declaring `file_handlers`, so once installed, double-clicking a `.md` file opens it here. The launch handle is a real `FileSystemFileHandle`, so Save writes straight back to the file you opened. Works offline
-- **Table of contents** — toggleable panel built from headings, click to jump
+  - `.png` — the preview rasterized via an SVG `<foreignObject>` painted onto a canvas, at up to
+    2× device scale. Remote images can't load inside an SVG-as-image, so they come out blank;
+    `data:` URIs are fine
+  - PDF — the browser's own print-to-PDF, so the text stays selectable. Printing forces the light
+    palette (and temporarily switches the app to light first, since Mermaid bakes theme colors
+    into its SVG)
+- **Per-block downloads** — hover a Mermaid diagram for an `SVG` button (real dimensions taken
+  from its viewBox, not mermaid's `width="100%"`), or a table for a `CSV` button (RFC-style
+  quoting, UTF-8 BOM so Excel reads accents correctly)
+- **Installable (Chrome/Edge desktop)** — a service worker plus a manifest declaring
+  `file_handlers`, so once installed, double-clicking a `.md` file opens it here. The launch
+  handle is a real `FileSystemFileHandle`, so Save writes straight back to the file you opened.
+  Works offline
+- **Table of contents** — toggleable panel built from headings; a slide-over drawer on phones
 - **Reader controls** — text size and line width (Aa button), persisted
-- **Sanitized rendering** — untrusted markdown can't inject script (DOMPurify, including over KaTeX output)
-- **Draft auto-restore**: content persists in `localStorage`, so a refresh or crash loses nothing
+- **Sanitized rendering** — untrusted markdown can't inject script (DOMPurify, including over
+  KaTeX output)
+- **Draft auto-restore** — content persists in `localStorage`, so a refresh or crash loses nothing
 - **Dark / light theme** (follows system, manual toggle remembered)
-- Rename inline, word/char/line counts, `⌘S` / `⌘⇧S` / `⌘O` shortcuts, print-friendly (printing outputs just the rendered document)
+- Inline rename, word/char/line counts, `⌘S` / `⌘⇧S` / `⌘O` shortcuts
 
-## Structure
+## Browser support
 
-```
-src/index.template.html   the app (HTML/CSS/JS) with inline markers
-vendor/marked.min.js      markdown parser      (marked v14, MIT)
-vendor/purify.min.js      HTML sanitizer       (DOMPurify v3, MIT)
-vendor/highlight.min.js   code highlighting    (highlight.js v11, BSD-3)
-vendor/katex.min.js|css   math rendering       (KaTeX v0.16, MIT)
-vendor/katex-fonts/       KaTeX woff2 fonts — embedded as data: URIs at build time
-vendor/mermaid.min.js     diagrams             (Mermaid v11, MIT)
-pwa/                      manifest.json, sw.js and the icons (the PWA sidecars)
-tools/make-icons.py       regenerates the icons — no image libraries needed
-build.sh                  inlines the vendor libs + fonts, then copies pwa/ to the root
-index.html                the built, self-contained deliverable (committed)
-```
+Rendering, editing, exports and per-block downloads work in any current browser. Two features
+depend on Chromium-desktop-only APIs and degrade gracefully elsewhere:
 
-The repo root is the deployable folder: `index.html` is the whole app, and the
-`manifest.json` / `sw.js` / `icon-*.png` beside it are only needed for the
-installable-app behavior. Serving `index.html` alone still works everywhere.
+| Feature | API | Elsewhere |
+| ------- | --- | --------- |
+| Save back to the original file | File System Access | falls back to a download |
+| Double-click a `.md` to open it here | `file_handlers` + `launchQueue` | not offered |
 
-After editing `src/index.template.html`, run:
+## Building
+
+No package manager, no toolchain — just Python 3 and bash:
 
 ```bash
 ./build.sh
 ```
 
-and commit the regenerated `index.html`.
+That inlines the vendored libraries and the KaTeX fonts into `src/index.template.html` and
+writes `index.html`, then copies the PWA sidecars to the repo root. Edit
+`src/index.template.html`, never `index.html`.
 
-## Deploying
+```
+src/index.template.html   the app (HTML/CSS/JS), with markers where libraries get inlined
+vendor/                   the bundled libraries + KaTeX .woff2 fonts
+pwa/                      manifest.json, sw.js and the icons
+tools/make-icons.py       regenerates the icons (hand-rolled PNG encoder, no dependencies)
+build.sh                  the build
+index.html                the built, self-contained app (committed)
+licenses/                 full license texts for everything bundled
+```
 
-`index.html` is the entire product. Copy it anywhere a static file can be served (or open it locally with `file://`). No build step, no dependencies, no CORS or CSP requirements beyond allowing its own inline script.
+## Self-hosting
+
+`index.html` is the entire product. Copy it anywhere a static file can be served, or open it
+from disk. It needs no CORS, no CSP beyond allowing its own inline scripts, and no backend.
+
+The `manifest.json`, `sw.js` and `icon-*.png` files beside it are only needed for the
+installable-app behavior; serving `index.html` alone works fine without them. Installability
+additionally requires HTTPS (or localhost).
+
+## License
+
+[MIT](LICENSE) for this project's own code.
+
+The built `index.html` bundles marked, DOMPurify, highlight.js, KaTeX and Mermaid, so their
+licenses travel with any copy you distribute — see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)
+and [`licenses/`](licenses/). A summary is also embedded as a comment at the top of the built file.
+
+## Contributing
+
+Issues and pull requests are welcome. Two things to keep in mind:
+
+1. Edit `src/index.template.html` and run `./build.sh`; don't hand-edit `index.html`.
+2. Anything that would send a user's document off their machine — telemetry, cloud rendering,
+   AI features backed by an API, share links that upload — is out of scope by design. Features
+   that need a server belong in a fork, not here.
