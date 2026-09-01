@@ -1549,31 +1549,32 @@
 
   /* ── Equation palette ───────────────────────────
      A grid of common TeX templates, each button rendered with KaTeX so you
-     pick the shape you want rather than recalling the syntax. "^" marks where
+     pick the shape you want rather than recalling the syntax. CARET marks where
      the caret lands after inserting. */
+  const CARET = "\uE010";   // a private-use char: it can never collide with LaTeX (a literal "^" can)
   const EQ_GROUPS = [
     ["Structures", [
-      ["\\frac{a}{b}", "\\frac{^}{}"],
-      ["\\sqrt{x}", "\\sqrt{^}"],
-      ["\\sqrt[n]{x}", "\\sqrt[^]{}"],
-      ["x^{n}", "^{}"],
-      ["x_{i}", "_{}"],
-      ["x_{i}^{n}", "_{^}^{}"],
-      ["\\sum_{i=1}^{n}", "\\sum_{^}^{}"],
-      ["\\prod_{i=1}^{n}", "\\prod_{^}^{}"],
-      ["\\int_{a}^{b}", "\\int_{^}^{}"],
-      ["\\iint", "\\iint ^"],
-      ["\\oint", "\\oint ^"],
-      ["\\lim_{x \\to 0}", "\\lim_{^ \\to }"],
-      ["\\binom{n}{k}", "\\binom{^}{}"],
-      ["\\overline{x}", "\\overline{^}"],
-      ["\\vec{v}", "\\vec{^}"],
-      ["\\hat{x}", "\\hat{^}"],
-      ["\\dot{x}", "\\dot{^}"],
-      ["|x|", "\\left| ^ \\right|"],
-      ["\\begin{matrix} a & b \\\\ c & d \\end{matrix}", "\\begin{matrix} ^ & \\\\ & \\end{matrix}"],
-      ["\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}", "\\begin{pmatrix} ^ & \\\\ & \\end{pmatrix}"],
-      ["\\begin{cases} a \\\\ b \\end{cases}", "\\begin{cases} ^ \\\\ \\end{cases}"],
+      ["\\frac{a}{b}", "\\frac{\uE010}{}"],
+      ["\\sqrt{x}", "\\sqrt{\uE010}"],
+      ["\\sqrt[n]{x}", "\\sqrt[\uE010]{}"],
+      ["x^{n}", "^{\uE010}"],
+      ["x_{i}", "_{\uE010}"],
+      ["x_{i}^{n}", "_{\uE010}^{}"],
+      ["\\sum_{i=1}^{n}", "\\sum_{\uE010}^{}"],
+      ["\\prod_{i=1}^{n}", "\\prod_{\uE010}^{}"],
+      ["\\int_{a}^{b}", "\\int_{\uE010}^{}"],
+      ["\\iint", "\\iint \uE010"],
+      ["\\oint", "\\oint \uE010"],
+      ["\\lim_{x \\to 0}", "\\lim_{\uE010 \\to }"],
+      ["\\binom{n}{k}", "\\binom{\uE010}{}"],
+      ["\\overline{x}", "\\overline{\uE010}"],
+      ["\\vec{v}", "\\vec{\uE010}"],
+      ["\\hat{x}", "\\hat{\uE010}"],
+      ["\\dot{x}", "\\dot{\uE010}"],
+      ["|x|", "\\left| \uE010 \\right|"],
+      ["\\begin{matrix} a & b \\\\ c & d \\end{matrix}", "\\begin{matrix} \uE010 & \\\\ & \\end{matrix}"],
+      ["\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}", "\\begin{pmatrix} \uE010 & \\\\ & \\end{pmatrix}"],
+      ["\\begin{cases} a \\\\ b \\end{cases}", "\\begin{cases} \uE010 \\\\ \\end{cases}"],
     ]],
     ["Greek", [
       ["\\alpha", "\\alpha "], ["\\beta", "\\beta "], ["\\gamma", "\\gamma "], ["\\delta", "\\delta "],
@@ -1626,8 +1627,8 @@
   function insertEquation(tpl) {
     let text = tpl;
     if (!insideMath()) text = "$" + text.trim() + "$";
-    const caret = text.indexOf("^");
-    text = text.replace("^", "");
+    const caret = text.indexOf(CARET);
+    text = text.replace(CARET, "");
     const at = editor.selectionStart;
     editor.focus();
     replaceRange(editor.selectionStart, editor.selectionEnd, text);   // undo-safe
