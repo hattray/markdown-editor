@@ -94,6 +94,17 @@
     white-space: nowrap;
   }
   .brand svg { width: 16px; height: 16px; color: var(--accent); }
+  #lite-tag {
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 4px;
+    margin-left: 6px;
+  }
 
   .filename-wrap {
     display: flex;
@@ -775,7 +786,7 @@
 <header>
   <span class="brand">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="M7 15V9l2.5 3L12 9v6"/><path d="M16 13l2 2 2-2"/><path d="M18 9v6"/></svg>
-    Free MD Viewer
+    Free MD Viewer<span id="lite-tag" hidden>lite</span>
   </span>
   <span class="filename-wrap">
     <input id="filename" value="untitled.md" spellcheck="false" autocomplete="off" title="File name (click to rename)">
@@ -4953,6 +4964,11 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
   let statusTimer = null;
 
   /* ── Markdown rendering ─────────────────────── */
+  /* The lite build ships without KaTeX and Mermaid, so every use of them is
+     feature-detected rather than assumed. One template, two builds. */
+  const HAS_MATH = typeof katex !== "undefined";
+  const HAS_DIAGRAMS = typeof mermaid !== "undefined";
+
   marked.use({ gfm: true, breaks: false });
   DOMPurify.addHook("afterSanitizeAttributes", (node) => {
     if (node.tagName === "A") {
@@ -5147,6 +5163,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
   let mermaidSeq = 0;
   let mermaidPending = Promise.resolve();   // awaited by the PDF export
   function initMermaid() {
+    if (!HAS_DIAGRAMS) return;
     mermaid.initialize({
       startOnLoad: false,
       securityLevel: "strict",
@@ -5187,6 +5204,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
       }
     });
     const jobs = [];
+    if (!HAS_DIAGRAMS) return;      // leave the fence as an ordinary code block
     preview.querySelectorAll("pre > code.language-mermaid").forEach((code) => {
       const div = document.createElement("div");
       div.className = "mermaid-block";
@@ -5303,9 +5321,9 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
   }
 
   function render() {
-    const { src, math } = extractMath(editor.value);
+    const { src, math } = HAS_MATH ? extractMath(editor.value) : { src: editor.value, math: [] };
     preview.innerHTML = DOMPurify.sanitize(marked.parse(src));
-    injectMath(math);
+    if (HAS_MATH) injectMath(math);
     transformCallouts();
     highlightAndDiagrams();
     // mark task-list items so CSS can drop their bullets
@@ -5811,6 +5829,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
   if (theme !== "light" && theme !== "dark") {
     theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }
+  if (!HAS_MATH && !HAS_DIAGRAMS) $("lite-tag").hidden = false;
   applyTheme(theme);
   initMermaid();
   // mermaid bakes colors into its SVG, so a theme change means a full re-render
@@ -5983,6 +6002,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     saveDraft();
   }
 
+  if (!HAS_MATH) $("btn-eq").closest(".popover-wrap").style.display = "none";
   $("btn-eq").addEventListener("click", (e) => {
     e.stopPropagation();
     if (!eqPop.dataset.built) { buildPalette(); eqPop.dataset.built = "1"; }
@@ -6155,7 +6175,7 @@ function greet(name) {
 }
 \`\`\`
 
-### Math
+${HAS_MATH ? `### Math
 
 Inline math like $E = mc^2$ works, and so do display equations:
 
@@ -6163,7 +6183,7 @@ $$
 \\int_{-\\infty}^{\\infty} e^{-x^2}\\,dx = \\sqrt{\\pi}
 $$
 
-### Diagrams
+` : ""}${HAS_DIAGRAMS ? `### Diagrams
 
 Mermaid code fences render as live diagrams:
 
@@ -6174,7 +6194,7 @@ flowchart LR
   B -- no --> E[Just read]
 \`\`\`
 
-### Callouts
+` : ""}### Callouts
 
 > [!NOTE]
 > GitHub-style callouts — NOTE, TIP, IMPORTANT, WARNING, and CAUTION — all render properly.

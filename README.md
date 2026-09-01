@@ -87,8 +87,13 @@ No package manager, no toolchain — just Python 3 and bash:
 ```
 
 That inlines the vendored libraries and the KaTeX fonts into `src/index.template.html` and
-writes `index.html`, then copies the PWA sidecars to the repo root. Edit
-`src/index.template.html`, never `index.html`.
+writes **two** builds, then copies the PWA sidecars to the repo root. Edit
+`src/index.template.html`, never the built files.
+
+| build | size | contains |
+| ----- | ---- | -------- |
+| `index.html` | ~3.7 MB | everything |
+| `index-lite.html` | ~270 KB | no Mermaid, no KaTeX |
 
 ```
 src/index.template.html   the app (HTML/CSS/JS), with markers where libraries get inlined
@@ -97,8 +102,25 @@ pwa/                      manifest.json, sw.js and the icons
 tools/make-icons.py       regenerates the icons (hand-rolled PNG encoder, no dependencies)
 build.sh                  the build
 index.html                the built, self-contained app (committed)
+index-lite.html           the same app without diagrams and math (committed)
 licenses/                 full license texts for everything bundled
 ```
+
+## The lite build
+
+Mermaid is 2.75 MB and KaTeX with its fonts about 0.74 MB, so **diagrams and math are ~96% of
+the full download**. If you never write either, `index-lite.html` is the same app roughly 13×
+smaller.
+
+It is the same source: the app feature-detects both libraries at runtime, so the two builds
+cannot drift apart. Without them, `$x^2$` stays literal text and a ```` ```mermaid ```` fence
+renders as an ordinary code block; the equation palette hides itself and a small **lite** badge
+appears next to the name. Everything else — GFM, syntax highlighting, footnotes, callouts,
+find & replace, the table of contents, exports, per-block downloads — is unchanged.
+
+`index-lite.html` deliberately ships no manifest or service worker: it is meant to be used as
+one standalone file, and those would point an install at the full build sitting beside it. It
+is not deployed anywhere; download it from this repo, or self-host it yourself.
 
 ## Self-hosting
 
