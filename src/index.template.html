@@ -1272,13 +1272,61 @@
     saveDraft();
   });
 
-  editor.addEventListener("keydown", (e) => {
-    if (e.key === "Tab") {
-      e.preventDefault();
-      const { selectionStart: s, selectionEnd: en } = editor;
-      editor.setRangeText("  ", s, en, "end");
-      editor.dispatchEvent(new Event("input"));
+  /* Tab / Shift+Tab indent and outdent.
+     Everything goes through execCommand("insertText") rather than setRangeText:
+     it is deprecated, but it is the only way to write into a textarea that the
+     browser records on its own undo stack, so Ctrl/Cmd+Z still works. */
+  const INDENT = "  ";
+  function replaceRange(start, end, text) {
+    editor.setSelectionRange(start, end);
+    let ok = false;
+    try { ok = document.execCommand("insertText", false, text); } catch (err) { ok = false; }
+    if (!ok) {                       // no native undo here, but never lose the edit
+      editor.setRangeText(text, start, end, "end");
+      editor.dispatchEvent(new Event("input", { bubbles: true }));
     }
+  }
+
+  // the full lines touched by the current selection
+  function selectedLines() {
+    const v = editor.value;
+    const start = v.lastIndexOf("\n", editor.selectionStart - 1) + 1;
+    let end = v.indexOf("\n", editor.selectionEnd);
+    if (end === -1) end = v.length;
+    return { start, end, text: v.slice(start, end) };
+  }
+
+  function shiftLines(outdent) {
+    const { start, end, text } = selectedLines();
+    const from = editor.selectionStart, to = editor.selectionEnd;
+    let firstDelta = 0, totalDelta = 0;
+    const out = text.split("\n").map((line, i) => {
+      let delta;
+      if (outdent) {
+        const lead = (line.match(/^(\t| {1,2})/) || [""])[0];
+        delta = -lead.length;
+        line = line.slice(lead.length);
+      } else {
+        delta = line.length ? INDENT.length : 0;   // don't indent blank lines
+        if (delta) line = INDENT + line;
+      }
+      if (i === 0) firstDelta = delta;
+      totalDelta += delta;
+      return line;
+    }).join("\n");
+
+    if (out === text) return;
+    replaceRange(start, end, out);
+    editor.setSelectionRange(Math.max(start, from + firstDelta), Math.max(start, to + totalDelta));
+  }
+
+  editor.addEventListener("keydown", (e) => {
+    if (e.key !== "Tab" || e.altKey || e.ctrlKey || e.metaKey) return;
+    e.preventDefault();
+    const spansLines = editor.value.slice(editor.selectionStart, editor.selectionEnd).includes("\n");
+    if (e.shiftKey) shiftLines(true);          // Shift+Tab always outdents
+    else if (spansLines) shiftLines(false);    // indent every line of a block
+    else replaceRange(editor.selectionStart, editor.selectionEnd, INDENT);
   });
 
   // proportional scroll sync: editor → preview
