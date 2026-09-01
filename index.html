@@ -480,7 +480,7 @@
     z-index: 2;
   }
   .mermaid-block:hover .blk-tools, .table-wrap:hover .blk-tools,
-  .blk-tools:focus-within { opacity: 1; }
+  .code-wrap:hover .blk-tools, .blk-tools:focus-within { opacity: 1; }
   .blk-tools button {
     font-family: var(--sans);
     font-size: 10.5px;
@@ -496,6 +496,8 @@
   .blk-tools button:hover { color: var(--accent); border-color: var(--accent); }
   .table-wrap { position: relative; margin: 0 0 0.9em; }
   .table-wrap table { margin: 0; }
+  .code-wrap { position: relative; margin: 0 0 0.9em; }
+  .code-wrap pre { margin: 0; }
 
   /* ── Math & diagrams ─────────────────────────── */
   .katex-block { overflow-x: auto; margin: 0 0 0.9em; padding: 2px 0; }
@@ -545,6 +547,66 @@
   }
   #reader-pop .wbtn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
   .btn.toggled { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Help & support ──────────────────────────── */
+  #help-pop {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+    padding: 14px 16px 15px;
+    width: 310px;
+    max-height: 70vh;
+    overflow-y: auto;
+    z-index: 60;
+    display: none;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--text-soft);
+    text-align: left;
+    white-space: normal;
+  }
+  #help-pop.on { display: block; }
+  #help-pop h4 {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    font-weight: 600;
+    margin: 14px 0 6px;
+  }
+  #help-pop h4:first-child { margin-top: 0; }
+  #help-pop p { margin: 0 0 8px; }
+  #help-pop a { color: var(--accent); text-decoration: none; font-weight: 500; }
+  #help-pop a:hover { text-decoration: underline; }
+  #help-pop .keys { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: baseline; }
+  #help-pop .keys kbd {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text);
+    background: var(--code-bg);
+    border: 1px solid var(--border-soft);
+    border-radius: 5px;
+    padding: 1px 5px;
+    white-space: nowrap;
+  }
+  #help-pop .mailto {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+    padding: 6px 10px;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: 7px;
+    font-size: 12px;
+    word-break: break-all;
+  }
+  #help-pop .mailto:hover { text-decoration: none; opacity: 0.85; }
 
   /* ── Equation palette ────────────────────────── */
   #eq-pop {
@@ -761,6 +823,12 @@
         <button class="wbtn" data-w="0">Full</button>
       </div>
     </div>
+  </span>
+  <span class="popover-wrap">
+    <button class="btn icon" id="btn-help" title="Help &amp; support" aria-label="Help and support">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </button>
+    <div id="help-pop"></div>
   </span>
   <button class="btn icon" id="btn-theme" title="Toggle theme">
     <svg id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -5171,6 +5239,39 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     setStatus("Exported table " + n + " as CSV (" + rows.length + " rows)");
   }
 
+  async function copyCode(code, btn) {
+    const text = code.textContent;
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(text);
+      ok = true;
+    } catch (e) {
+      // the async clipboard needs a secure context; this keeps copy working from file://
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.cssText = "position:fixed;left:-9999px;top:0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { ok = document.execCommand("copy"); } catch (e2) { ok = false; }
+      ta.remove();
+    }
+    btn.textContent = ok ? "Copied" : "Failed";
+    setTimeout(() => { btn.textContent = "Copy"; }, 1400);
+  }
+
+  function addCodeTools() {
+    preview.querySelectorAll("pre > code").forEach((code) => {
+      const pre = code.parentElement;
+      if (pre.parentElement && pre.parentElement.classList.contains("code-wrap")) return;
+      const wrap = document.createElement("div");
+      wrap.className = "code-wrap";
+      pre.replaceWith(wrap);
+      wrap.appendChild(pre);
+      wrap.appendChild(toolButton("Copy", "Copy this code block",
+        (e) => copyCode(code, e.currentTarget)));
+    });
+  }
+
   function addTableTools() {
     let n = 0;
     preview.querySelectorAll("table").forEach((table) => {
@@ -5212,6 +5313,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
       cb.closest("li").classList.add("task");
     });
     addTableTools();
+    addCodeTools();
     buildToc();
     updateStats();
   }
@@ -5666,6 +5768,8 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     $("btn-export").classList.remove("toggled");
     $("eq-pop").classList.remove("on");
     $("btn-eq").classList.remove("toggled");
+    $("help-pop").classList.remove("on");
+    $("btn-help").classList.remove("toggled");
   });
   $("size-range").addEventListener("input", () => {
     reader.size = +$("size-range").value;
@@ -5751,6 +5855,41 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     $("btn-export").classList.remove("toggled");
     ({ md: download, html: exportHtml, png: exportPng, pdf: exportPdf })[b.dataset.exp]();
   });
+
+  /* ── Help & support ─────────────────────────────
+     Doubles as the route for the things this build deliberately does not do
+     (a lite build, SSO, sync) — those need a conversation, not a feature flag. */
+  const helpPop = $("help-pop");
+  const MOD = isMac ? "⌘" : "Ctrl+";
+  function buildHelp() {
+    helpPop.innerHTML =
+      "<h4>Keyboard</h4><div class='keys'>" +
+      "<kbd>" + MOD + "S</kbd><span>Save</span>" +
+      "<kbd>" + (isMac ? "⌘⇧S" : "Ctrl+Shift+S") + "</kbd><span>Save as</span>" +
+      "<kbd>" + MOD + "O</kbd><span>Open a file</span>" +
+      "<kbd>" + MOD + "F</kbd><span>Find &amp; replace</span>" +
+      "<kbd>Tab</kbd><span>Indent</span>" +
+      "<kbd>⇧Tab</kbd><span>Outdent</span>" +
+      "</div>" +
+      "<h4>Tips</h4><p>Drop a <code>.md</code> file anywhere on the page. Hover a table or a diagram " +
+      "to download it on its own. Install it in Chrome or Edge and <code>.md</code> files open here " +
+      "on double-click.</p>" +
+      "<h4>Need something custom?</h4><p>We build tailored versions — a lite build without diagrams " +
+      "and math, SSO, cloud or self-hosted sync, custom branding, or an on-premise deployment.</p>" +
+      "<a class='mailto' href='mailto:support@kingsbridge-consultancy.com?subject=" +
+      encodeURIComponent("Free MD Viewer — custom build enquiry") +
+      "'>support@kingsbridge-consultancy.com</a>" +
+      "<h4>Found a bug?</h4><p>The source is open — " +
+      "<a href='https://github.com/hattray/markdown-editor/issues' target='_blank' rel='noopener noreferrer'>" +
+      "open an issue on GitHub</a>.</p>";
+  }
+  $("btn-help").addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!helpPop.dataset.built) { buildHelp(); helpPop.dataset.built = "1"; }
+    helpPop.classList.toggle("on");
+    $("btn-help").classList.toggle("toggled", helpPop.classList.contains("on"));
+  });
+  helpPop.addEventListener("click", (e) => e.stopPropagation());
 
   /* ── Equation palette ───────────────────────────
      A grid of common TeX templates, each button rendered with KaTeX so you

@@ -49,6 +49,10 @@ the app's own code ships readable.
   - PDF — the browser's own print-to-PDF, so the text stays selectable. Printing forces the light
     palette (and temporarily switches the app to light first, since Mermaid bakes theme colors
     into its SVG)
+- **Copy code blocks** — hover a fenced code block for a `Copy` button (falls back to a
+  legacy copy when the async clipboard is unavailable, e.g. from `file://`)
+- **Help & support** — a `?` panel with the shortcuts, plus a route to request custom builds
+  (lite, SSO, sync, on-premise) at support@kingsbridge-consultancy.com
 - **Per-block downloads** — hover a Mermaid diagram for an `SVG` button (real dimensions taken
   from its viewBox, not mermaid's `width="100%"`), or a table for a `CSV` button (RFC-style
   quoting, UTF-8 BOM so Excel reads accents correctly)
