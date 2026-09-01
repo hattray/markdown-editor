@@ -483,6 +483,57 @@
   #reader-pop .wbtn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
   .btn.toggled { border-color: var(--accent); color: var(--accent); }
 
+  /* ── Equation palette ────────────────────────── */
+  #eq-pop {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+    padding: 10px;
+    width: 330px;
+    max-height: 60vh;
+    overflow-y: auto;
+    z-index: 60;
+    display: none;
+  }
+  #eq-pop.on { display: block; }
+  #eq-pop h4 {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    font-weight: 600;
+    margin: 10px 2px 6px;
+  }
+  #eq-pop h4:first-child { margin-top: 0; }
+  #eq-pop .grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+  #eq-pop .grid button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    border: 1px solid var(--border-soft);
+    background: var(--bg);
+    border-radius: 7px;
+    cursor: pointer;
+    color: var(--text);
+    padding: 2px;
+    overflow: hidden;
+  }
+  #eq-pop .grid button:hover { border-color: var(--accent); background: var(--accent-soft); }
+  #eq-pop .grid button .katex { font-size: 0.95em; }
+  #eq-pop .hint {
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-soft);
+    line-height: 1.45;
+  }
+
   /* ── Export menu ─────────────────────────────── */
   #export-pop {
     position: absolute;
@@ -629,6 +680,10 @@
   <button class="btn icon" id="btn-toc" title="Table of contents">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
   </button>
+  <span class="popover-wrap">
+    <button class="btn icon" id="btn-eq" title="Insert an equation" style="font-weight:600;">&Sigma;</button>
+    <div id="eq-pop"></div>
+  </span>
   <span class="popover-wrap">
     <button class="btn icon" id="btn-reader" title="Reading options" style="font-size:12px;font-weight:600;">Aa</button>
     <div id="reader-pop">
@@ -1406,6 +1461,8 @@
     $("btn-reader").classList.remove("toggled");
     $("export-pop").classList.remove("on");
     $("btn-export").classList.remove("toggled");
+    $("eq-pop").classList.remove("on");
+    $("btn-eq").classList.remove("toggled");
   });
   $("size-range").addEventListener("input", () => {
     reader.size = +$("size-range").value;
@@ -1488,6 +1545,109 @@
     exportPop.classList.remove("on");
     $("btn-export").classList.remove("toggled");
     ({ md: download, html: exportHtml, png: exportPng, pdf: exportPdf })[b.dataset.exp]();
+  });
+
+  /* ── Equation palette ───────────────────────────
+     A grid of common TeX templates, each button rendered with KaTeX so you
+     pick the shape you want rather than recalling the syntax. "^" marks where
+     the caret lands after inserting. */
+  const EQ_GROUPS = [
+    ["Structures", [
+      ["\\frac{a}{b}", "\\frac{^}{}"],
+      ["\\sqrt{x}", "\\sqrt{^}"],
+      ["\\sqrt[n]{x}", "\\sqrt[^]{}"],
+      ["x^{n}", "^{}"],
+      ["x_{i}", "_{}"],
+      ["x_{i}^{n}", "_{^}^{}"],
+      ["\\sum_{i=1}^{n}", "\\sum_{^}^{}"],
+      ["\\prod_{i=1}^{n}", "\\prod_{^}^{}"],
+      ["\\int_{a}^{b}", "\\int_{^}^{}"],
+      ["\\iint", "\\iint ^"],
+      ["\\oint", "\\oint ^"],
+      ["\\lim_{x \\to 0}", "\\lim_{^ \\to }"],
+      ["\\binom{n}{k}", "\\binom{^}{}"],
+      ["\\overline{x}", "\\overline{^}"],
+      ["\\vec{v}", "\\vec{^}"],
+      ["\\hat{x}", "\\hat{^}"],
+      ["\\dot{x}", "\\dot{^}"],
+      ["|x|", "\\left| ^ \\right|"],
+      ["\\begin{matrix} a & b \\\\ c & d \\end{matrix}", "\\begin{matrix} ^ & \\\\ & \\end{matrix}"],
+      ["\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}", "\\begin{pmatrix} ^ & \\\\ & \\end{pmatrix}"],
+      ["\\begin{cases} a \\\\ b \\end{cases}", "\\begin{cases} ^ \\\\ \\end{cases}"],
+    ]],
+    ["Greek", [
+      ["\\alpha", "\\alpha "], ["\\beta", "\\beta "], ["\\gamma", "\\gamma "], ["\\delta", "\\delta "],
+      ["\\epsilon", "\\epsilon "], ["\\zeta", "\\zeta "], ["\\eta", "\\eta "], ["\\theta", "\\theta "],
+      ["\\lambda", "\\lambda "], ["\\mu", "\\mu "], ["\\pi", "\\pi "], ["\\rho", "\\rho "],
+      ["\\sigma", "\\sigma "], ["\\tau", "\\tau "], ["\\phi", "\\phi "], ["\\chi", "\\chi "],
+      ["\\psi", "\\psi "], ["\\omega", "\\omega "], ["\\Gamma", "\\Gamma "], ["\\Delta", "\\Delta "],
+      ["\\Theta", "\\Theta "], ["\\Lambda", "\\Lambda "], ["\\Sigma", "\\Sigma "], ["\\Omega", "\\Omega "],
+    ]],
+    ["Relations & operators", [
+      ["\\times", "\\times "], ["\\div", "\\div "], ["\\pm", "\\pm "], ["\\cdot", "\\cdot "],
+      ["\\leq", "\\leq "], ["\\geq", "\\geq "], ["\\neq", "\\neq "], ["\\approx", "\\approx "],
+      ["\\equiv", "\\equiv "], ["\\propto", "\\propto "], ["\\in", "\\in "], ["\\notin", "\\notin "],
+      ["\\subset", "\\subset "], ["\\cup", "\\cup "], ["\\cap", "\\cap "], ["\\forall", "\\forall "],
+      ["\\exists", "\\exists "], ["\\nabla", "\\nabla "], ["\\partial", "\\partial "], ["\\infty", "\\infty "],
+      ["\\to", "\\to "], ["\\Rightarrow", "\\Rightarrow "], ["\\Leftrightarrow", "\\Leftrightarrow "], ["\\therefore", "\\therefore "],
+    ]],
+  ];
+
+  const eqPop = $("eq-pop");
+  function buildPalette() {
+    let html = "";
+    for (const [title, items] of EQ_GROUPS) {
+      html += "<h4>" + title + "</h4><div class='grid'>";
+      for (let i = 0; i < items.length; i++) {
+        let face;
+        try { face = katex.renderToString(items[i][0], { throwOnError: false }); }
+        catch (e) { face = escapeHtml(items[i][0]); }
+        html += "<button type='button' data-tex='" + escapeHtml(items[i][1]) + "' title='" +
+                escapeHtml(items[i][0]) + "'>" + face + "</button>";
+      }
+      html += "</div>";
+    }
+    html += "<div class='hint'>Inserts LaTeX at the cursor and wraps it in <code>$…$</code> " +
+            "unless you are already inside math. Use <b>$$</b> on its own line for a display equation.</div>";
+    eqPop.innerHTML = DOMPurify.sanitize(html, { USE_PROFILES: { html: true, mathMl: true, svg: true } });
+  }
+
+  // Are we already between inline $ delimiters on this line?
+  function insideMath() {
+    const v = editor.value.slice(0, editor.selectionStart);
+    const line = v.slice(v.lastIndexOf("\n") + 1);
+    let count = 0;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === "$" && line[i - 1] !== "\\") count++;
+    }
+    return count % 2 === 1;
+  }
+
+  function insertEquation(tpl) {
+    let text = tpl;
+    if (!insideMath()) text = "$" + text.trim() + "$";
+    const caret = text.indexOf("^");
+    text = text.replace("^", "");
+    const at = editor.selectionStart;
+    editor.focus();
+    replaceRange(editor.selectionStart, editor.selectionEnd, text);   // undo-safe
+    const pos = at + (caret === -1 ? text.length : caret);
+    editor.setSelectionRange(pos, pos);
+    setDirty(true);
+    scheduleRender();
+    saveDraft();
+  }
+
+  $("btn-eq").addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!eqPop.dataset.built) { buildPalette(); eqPop.dataset.built = "1"; }
+    eqPop.classList.toggle("on");
+    $("btn-eq").classList.toggle("toggled", eqPop.classList.contains("on"));
+  });
+  eqPop.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const b = e.target.closest("button[data-tex]");
+    if (b) insertEquation(b.dataset.tex);
   });
 
   /* ── Installed-app plumbing ─────────────────── */
