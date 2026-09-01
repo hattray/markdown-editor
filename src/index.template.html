@@ -405,6 +405,69 @@
   [data-theme="dark"] .hljs-string, [data-theme="dark"] .hljs-regexp, [data-theme="dark"] .hljs-addition, [data-theme="dark"] .hljs-meta .hljs-string { color: #a5d6ff; }
   [data-theme="dark"] .hljs-built_in, [data-theme="dark"] .hljs-symbol, [data-theme="dark"] .hljs-type { color: #ffa657; }
 
+  /* ── Find & replace ──────────────────────────── */
+  #find-bar {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex: none;
+  }
+  body.find-open #find-bar { display: flex; }
+  body[data-view="preview"] #find-bar { display: none; }
+  #find-bar input {
+    font: inherit;
+    font-size: 12.5px;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    min-width: 0;
+    flex: 1 1 40%;
+  }
+  #find-bar input:focus { border-color: var(--accent); }
+  #find-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    white-space: nowrap;
+    min-width: 34px;
+    text-align: center;
+  }
+  #find-count.none { color: var(--danger); }
+  #find-bar button {
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel);
+    color: var(--text-soft);
+    cursor: pointer;
+    flex: none;
+  }
+  #find-bar button:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* ── Footnotes ───────────────────────────────── */
+  #preview .fn-ref { font-size: 0.75em; line-height: 0; }
+  #preview .fn-ref a { text-decoration: none; padding: 0 0.15em; }
+  #preview .footnotes {
+    margin-top: 2.4em;
+    padding-top: 1em;
+    border-top: 1px solid var(--border);
+    font-size: 0.88em;
+    color: var(--text-soft);
+  }
+  #preview .footnotes ol { padding-left: 1.3em; }
+  #preview .footnotes li { margin: 0.35em 0; }
+  #preview .footnotes li:target { background: var(--accent-soft); border-radius: 5px; }
+  #preview .fn-back { text-decoration: none; margin-left: 0.3em; }
+
   /* ── Per-block download tools ────────────────── */
   .blk-tools {
     position: absolute;
@@ -706,6 +769,16 @@
 
 <main>
   <div id="editor-pane">
+    <div id="find-bar">
+      <input id="find-input" placeholder="Find" spellcheck="false" autocomplete="off">
+      <input id="replace-input" placeholder="Replace with" spellcheck="false" autocomplete="off">
+      <span id="find-count"></span>
+      <button id="find-prev" title="Previous match (Shift+Enter)">&#8593;</button>
+      <button id="find-next" title="Next match (Enter)">&#8595;</button>
+      <button id="find-replace" title="Replace this match">Replace</button>
+      <button id="find-all" title="Replace every match">All</button>
+      <button id="find-close" title="Close (Esc)">&#10005;</button>
+    </div>
     <textarea id="editor" spellcheck="false" placeholder="Type markdown here, or drop a .md file anywhere…"></textarea>
   </div>
   <div id="preview-pane"><article id="preview"></article></div>
@@ -751,9 +824,65 @@
   marked.use({ gfm: true, breaks: false });
   DOMPurify.addHook("afterSanitizeAttributes", (node) => {
     if (node.tagName === "A") {
+      // in-document jumps (footnotes) must stay in this page
+      if ((node.getAttribute("href") || "").startsWith("#")) return;
       node.setAttribute("target", "_blank");
       node.setAttribute("rel", "noopener noreferrer");
     }
+  });
+
+
+  /* ── Footnotes ───────────────────────────────────
+     marked ships no footnote support, but [^1] references and their
+     definitions are common in specs, papers and RFC-style docs. Definition
+     bodies are rendered with a second, hook-free marked instance so this can
+     never re-enter the main parse. */
+  const markedPlain = new marked.Marked({ gfm: true });
+  let fnDefs = new Map(), fnOrder = [];
+
+  marked.use({
+    hooks: {
+      preprocess(src) {
+        fnDefs = new Map();
+        fnOrder = [];
+        // "[^label]: body", continued by indented lines
+        return src.replace(
+          /^\[\^([^\]\n]+)\]:[ \t]*([^\n]*(?:\n(?:[ \t]{2,}|\t)[^\n]*)*)/gm,
+          (_m, label, body) => {
+            fnDefs.set(label.trim(), body.replace(/\n[ \t]+/g, "\n").trim());
+            return "";
+          }
+        );
+      },
+      postprocess(html) {
+        if (!fnOrder.length) return html;
+        let out = '<section class="footnotes"><ol>';
+        fnOrder.forEach((label, i) => {
+          const n = i + 1;
+          out += '<li id="fn-' + n + '">' + markedPlain.parseInline(fnDefs.get(label) || "") +
+                 ' <a class="fn-back" href="#fnref-' + n + '" title="Back to text">↩</a></li>';
+        });
+        return html + out + '</ol></section>';
+      },
+    },
+    extensions: [{
+      name: "footnoteRef",
+      level: "inline",
+      start(src) { return src.indexOf("[^"); },
+      tokenizer(src) {
+        const m = /^\[\^([^\]\n]+)\]/.exec(src);
+        if (!m) return;
+        const label = m[1].trim();
+        if (!fnDefs.has(label)) return;   // a reference with no definition stays literal text
+        return { type: "footnoteRef", raw: m[0], label };
+      },
+      renderer(token) {
+        let i = fnOrder.indexOf(token.label);
+        if (i === -1) { fnOrder.push(token.label); i = fnOrder.length - 1; }
+        const n = i + 1;
+        return '<sup class="fn-ref" id="fnref-' + n + '"><a href="#fn-' + n + '">' + n + '</a></sup>';
+      },
+    }],
   });
 
   const escapeHtml = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -1403,7 +1532,8 @@
 
   /* ── TOC toggle ─────────────────────────────── */
   const TOC_KEY = "md-viewer-toc";
-  const isDrawer = () => matchMedia("(max-width: 900px)").matches;
+  const isDrawer = () => matchMedia("(max-width: 900px)").matches;   // contents panel has no room
+  const isPhone  = () => matchMedia("(max-width: 720px)").matches;   // side-by-side is unreadable
 
   function setToc(on) {
     document.body.classList.toggle("toc-open", on);
@@ -1421,6 +1551,15 @@
   } catch (e) {}
 
   $("toc-backdrop").addEventListener("click", () => setToc(false));
+
+  preview.addEventListener("click", (e) => {
+    const a = e.target.closest('a[href^="#fn"]');
+    if (!a) return;
+    e.preventDefault();
+    const target = document.getElementById(a.getAttribute("href").slice(1));
+    if (target) previewPane.scrollTop = target.getBoundingClientRect().top -
+      previewPane.getBoundingClientRect().top + previewPane.scrollTop - 40;
+  });
 
   tocEl.addEventListener("click", (e) => {
     const a = e.target.closest("a[data-id]");
@@ -1490,7 +1629,8 @@
     });
   });
   // A side-by-side split is unreadable on a phone, and reading is the common case there.
-  if (isDrawer()) setView("preview");
+  // width can read 0 when the page boots in a hidden tab; don't mistake that for a phone
+  if (window.innerWidth > 0 && isPhone()) setView("preview");
 
   /* ── Theme ──────────────────────────────────── */
   function applyTheme(t) {
@@ -1522,6 +1662,7 @@
     const k = e.key.toLowerCase();
     if (k === "s") { e.preventDefault(); e.shiftKey ? saveAs() : save(); }
     else if (k === "o") { e.preventDefault(); openPicker(); }
+    else if (k === "f" && document.body.dataset.view !== "preview") { e.preventDefault(); openFind(); }
   });
 
   window.addEventListener("beforeunload", (e) => {
@@ -1649,6 +1790,103 @@
     e.stopPropagation();
     const b = e.target.closest("button[data-tex]");
     if (b) insertEquation(b.dataset.tex);
+  });
+
+  /* ── Find & replace ─────────────────────────────
+     A textarea gives us nothing here: the browser's own find can search the
+     rendered preview but not the source, so in Edit mode there was no way to
+     locate a string at all. Replacements go through replaceRange so they land
+     on the native undo stack like every other edit. */
+  const findBar = $("find-bar"), findInput = $("find-input"), replaceInput = $("replace-input");
+  let matches = [], matchIdx = -1;
+
+  function runFind(keepIndex) {
+    const q = findInput.value;
+    matches = [];
+    if (q) {
+      const hay = editor.value.toLowerCase(), needle = q.toLowerCase();
+      let i = hay.indexOf(needle);
+      while (i !== -1) { matches.push(i); i = hay.indexOf(needle, i + needle.length); }
+    }
+    if (!keepIndex || matchIdx >= matches.length) matchIdx = matches.length ? 0 : -1;
+    paintCount();
+  }
+  function paintCount() {
+    const c = $("find-count");
+    c.textContent = findInput.value ? (matches.length ? (matchIdx + 1) + "/" + matches.length : "0/0") : "";
+    c.classList.toggle("none", !!findInput.value && !matches.length);
+  }
+  function revealMatch() {
+    if (matchIdx < 0 || !matches.length) return;
+    const start = matches[matchIdx], end = start + findInput.value.length;
+    editor.focus();
+    editor.setSelectionRange(start, end);
+    // approximate, but enough to bring a match on screen in a wrapped textarea
+    const line = editor.value.slice(0, start).split("\n").length - 1;
+    const lh = parseFloat(getComputedStyle(editor).lineHeight) || 20;
+    const top = line * lh;
+    if (top < editor.scrollTop || top > editor.scrollTop + editor.clientHeight - lh * 2) {
+      editor.scrollTop = Math.max(0, top - editor.clientHeight / 3);
+    }
+    paintCount();
+  }
+  function stepMatch(dir) {
+    if (!matches.length) return;
+    matchIdx = (matchIdx + dir + matches.length) % matches.length;
+    revealMatch();
+  }
+  function afterEdit() { setDirty(true); scheduleRender(); saveDraft(); }
+
+  function replaceCurrent() {
+    if (matchIdx < 0 || !matches.length) return;
+    const start = matches[matchIdx];
+    replaceRange(start, start + findInput.value.length, replaceInput.value);
+    afterEdit();
+    runFind(true);
+    revealMatch();
+  }
+  function replaceAll() {
+    if (!matches.length) return;
+    const q = findInput.value, r = replaceInput.value, n = matches.length;
+    let out = "", last = 0;
+    for (const m of matches) { out += editor.value.slice(last, m) + r; last = m + q.length; }
+    out += editor.value.slice(last);
+    replaceRange(0, editor.value.length, out);   // one undo step for the lot
+    afterEdit();
+    runFind(false);
+    setStatus("Replaced " + n + " occurrence" + (n === 1 ? "" : "s"));
+  }
+
+  function openFind() {
+    if (document.body.dataset.view === "preview") setView("split");
+    document.body.classList.add("find-open");
+    const sel = editor.value.slice(editor.selectionStart, editor.selectionEnd);
+    if (sel && !sel.includes("\n")) findInput.value = sel;
+    findInput.focus();
+    findInput.select();
+    runFind(false);
+  }
+  function closeFind() {
+    document.body.classList.remove("find-open");
+    editor.focus();
+  }
+
+  findInput.addEventListener("input", () => { runFind(false); revealMatch(); });
+  findInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); stepMatch(e.shiftKey ? -1 : 1); }
+    else if (e.key === "Escape") { e.preventDefault(); closeFind(); }
+  });
+  replaceInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); replaceCurrent(); }
+    else if (e.key === "Escape") { e.preventDefault(); closeFind(); }
+  });
+  $("find-next").addEventListener("click", () => stepMatch(1));
+  $("find-prev").addEventListener("click", () => stepMatch(-1));
+  $("find-replace").addEventListener("click", replaceCurrent);
+  $("find-all").addEventListener("click", replaceAll);
+  $("find-close").addEventListener("click", closeFind);
+  editor.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && document.body.classList.contains("find-open")) closeFind();
   });
 
   /* ── Installed-app plumbing ─────────────────── */

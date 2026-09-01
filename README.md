@@ -33,6 +33,13 @@ the app's own code ships readable.
 - **LaTeX math** via KaTeX: `$inline$`, `$$display$$`, `\(...\)`, `\[...\]` — math is extracted
   *before* markdown parsing so underscores/asterisks in TeX survive, and `$` inside code spans
   and fences is left alone
+- **Footnotes**: `[^1]` references with `[^1]: …` definitions, numbered by order of first
+  reference, collected into a footnote section with back-links. A reference with no definition
+  stays literal text, as on GitHub
+- **Find & replace** in the editor (`⌘F`/`Ctrl+F`) — match count, next/previous, replace one or
+  all. Replace All is a single undo step. In Preview the browser's own find is left alone
+- **Insert-equation palette** — a grid of LaTeX structures, Greek letters and operators, each
+  rendered with KaTeX so you pick the shape instead of recalling the syntax
 - **GitHub callouts**: `> [!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`
 - **Export** (all generated in-page, nothing uploaded, no watermarks or limits):
   - `.html` — the rendered document as one self-contained file, styles and KaTeX fonts embedded
