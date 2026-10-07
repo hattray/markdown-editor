@@ -898,6 +898,17 @@
   let fileHandle = null;     // FileSystemFileHandle when opened via picker/drop (Chromium)
   let dirty = false;
   let statusTimer = null;
+  let fileOpened = false;    // a real file is loaded, as opposed to the welcome document
+
+  /* The window/tab title names the open file, the way an editor does. Browsers
+     never expose a file's path — a handle carries only .name — so the name is
+     all we can show. The marketing title stays while nothing is open. */
+  const BASE_TITLE = document.title;
+  function updateTitle() {
+    const name = (filenameEl.value || "").trim();
+    const named = fileOpened || (name && name !== "untitled.md");
+    document.title = named ? (dirty ? "\u2022 " : "") + name + " \u2014 Free MD Viewer" : BASE_TITLE;
+  }
 
   /* ── Markdown rendering ─────────────────────── */
   /* The lite build ships without KaTeX and Mermaid, so every use of them is
@@ -1296,6 +1307,7 @@
   function setDirty(v) {
     dirty = v;
     dirtyDot.classList.toggle("on", v);
+    updateTitle();
   }
 
   /* ── Draft persistence (localStorage) ───────── */
@@ -1326,6 +1338,7 @@
     editor.value = text.replace(/\r\n/g, "\n");
     filenameEl.value = name || "untitled.md";
     fileHandle = handle || null;
+    fileOpened = true;
     setDirty(false);
     render();
     saveDraft();
@@ -1528,6 +1541,7 @@
   function newDoc() {
     if (dirty && !confirm("Discard unsaved changes and start a new document?")) return;
     fileHandle = null;
+    fileOpened = false;
     editor.value = "";
     filenameEl.value = "untitled.md";
     setDirty(false);
@@ -1646,6 +1660,7 @@
     if (!/\.(md|markdown|mdown|mkd|txt)$/i.test(name)) name += ".md";
     filenameEl.value = name;
     fileHandle = null; // renamed → next Save asks where to put it
+    updateTitle();
     saveDraft();
   });
   filenameEl.addEventListener("keydown", (e) => { if (e.key === "Enter") filenameEl.blur(); });
@@ -2141,6 +2156,7 @@ Shortcuts: **${isMac ? "⌘" : "Ctrl+"}S** save · **${isMac ? "⌘⇧" : "Ctrl+
 `;
 
   if (!loadDraft()) editor.value = WELCOME;
+  updateTitle();
   render();
   // Focusing a textarea leaves the caret at the end of its text and scrolls
   // there, which would open the document at its last line (and drag the
