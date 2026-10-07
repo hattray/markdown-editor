@@ -2147,12 +2147,23 @@ return Pe}()
 
   /* The window/tab title names the open file, the way an editor does. Browsers
      never expose a file's path — a handle carries only .name — so the name is
-     all we can show. The marketing title stays while nothing is open. */
+     all we can show.
+
+     An installed window draws its own title as "<app name> - <document.title>",
+     so anything naming the app again reads "Free MD Viewer - x.md — Free MD
+     Viewer". There we show the bare file name; in a tab we keep the suffix for
+     context, and the marketing title while only the welcome document is open. */
   const BASE_TITLE = document.title;
+  const isInstalled = () =>
+    ["standalone", "minimal-ui", "window-controls-overlay"]
+      .some((m) => matchMedia("(display-mode: " + m + ")").matches) || navigator.standalone === true;
+
   function updateTitle() {
-    const name = (filenameEl.value || "").trim();
-    const named = fileOpened || (name && name !== "untitled.md");
-    document.title = named ? (dirty ? "\u2022 " : "") + name + " \u2014 Free MD Viewer" : BASE_TITLE;
+    const name = (filenameEl.value || "").trim() || "untitled.md";
+    const mark = dirty ? "\u2022 " : "";
+    if (isInstalled()) { document.title = mark + name; return; }
+    const named = fileOpened || name !== "untitled.md";
+    document.title = named ? mark + name + " \u2014 Free MD Viewer" : BASE_TITLE;
   }
 
   /* ── Markdown rendering ─────────────────────── */
