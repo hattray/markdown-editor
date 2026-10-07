@@ -2,6 +2,7 @@
 <!--
   Free MD Viewer (lite) — https://github.com/hattray/markdown-editor
   Copyright (c) 2026 Kingsbridge Consultancy LLC. MIT licensed.
+  Version 1.0.0, built 2026-10-07.
 
   This file bundles the following libraries, each of which carries its own
   license banner inside its minified code below.
@@ -3086,6 +3087,8 @@ return Pe}()
      Doubles as the route for the things this build deliberately does not do
      (a lite build, SSO, sync) — those need a conversation, not a feature flag. */
   const helpPop = $("help-pop");
+  const APP_VERSION = "1.0.0";
+  const BUILD_DATE = "2026-10-07";
   const MOD = isMac ? "⌘" : "Ctrl+";
   function buildHelp() {
     helpPop.innerHTML =
@@ -3107,7 +3110,11 @@ return Pe}()
       "'>support@kingsbridge-consultancy.com</a>" +
       "<h4>Found a bug?</h4><p>The source is open — " +
       "<a href='https://github.com/hattray/markdown-editor/issues' target='_blank' rel='noopener noreferrer'>" +
-      "open an issue on GitHub</a>.</p>";
+      "open an issue on GitHub</a>.</p>" +
+      "<h4>Version</h4><p>" + (HAS_MATH || HAS_DIAGRAMS ? "" : "Lite build &middot; ") +
+      "<b>" + APP_VERSION + "</b> &middot; built " + BUILD_DATE + "<br>" +
+      "<a href='https://github.com/hattray/markdown-editor/releases/latest' target='_blank' rel='noopener noreferrer'>" +
+      "Check for a newer version</a> — this page never checks on its own.</p>";
   }
   $("btn-help").addEventListener("click", (e) => {
     e.stopPropagation();

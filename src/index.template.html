@@ -2,6 +2,7 @@
 <!--
   Free MD Viewer — https://github.com/hattray/markdown-editor
   Copyright (c) 2026 Kingsbridge Consultancy LLC. MIT licensed.
+  Version __VERSION__, built __BUILD_DATE__.
 
   This file bundles the following libraries. KaTeX and Mermaid ship no license
   banner of their own, so their notices are recorded here; the others carry
@@ -1841,6 +1842,8 @@
      Doubles as the route for the things this build deliberately does not do
      (a lite build, SSO, sync) — those need a conversation, not a feature flag. */
   const helpPop = $("help-pop");
+  const APP_VERSION = "__VERSION__";
+  const BUILD_DATE = "__BUILD_DATE__";
   const MOD = isMac ? "⌘" : "Ctrl+";
   function buildHelp() {
     helpPop.innerHTML =
@@ -1862,7 +1865,11 @@
       "'>support@kingsbridge-consultancy.com</a>" +
       "<h4>Found a bug?</h4><p>The source is open — " +
       "<a href='https://github.com/hattray/markdown-editor/issues' target='_blank' rel='noopener noreferrer'>" +
-      "open an issue on GitHub</a>.</p>";
+      "open an issue on GitHub</a>.</p>" +
+      "<h4>Version</h4><p>" + (HAS_MATH || HAS_DIAGRAMS ? "" : "Lite build &middot; ") +
+      "<b>" + APP_VERSION + "</b> &middot; built " + BUILD_DATE + "<br>" +
+      "<a href='https://github.com/hattray/markdown-editor/releases/latest' target='_blank' rel='noopener noreferrer'>" +
+      "Check for a newer version</a> — this page never checks on its own.</p>";
   }
   $("btn-help").addEventListener("click", (e) => {
     e.stopPropagation();

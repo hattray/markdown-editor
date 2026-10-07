@@ -78,6 +78,23 @@ depend on Chromium-desktop-only APIs and degrade gracefully elsewhere:
 | Save back to the original file | File System Access | falls back to a download |
 | Double-click a `.md` to open it here | `file_handlers` + `launchQueue` | not offered |
 
+## Versions & updates
+
+Every build stamps its version and date into the comment at the top of the file and
+into the **?** panel, so any copy can be identified. Releases, with both builds
+attached, are on the
+[releases page](https://github.com/hattray/markdown-editor/releases) — this link
+always serves the newest full build:
+
+```
+https://github.com/hattray/markdown-editor/releases/latest/download/index.html
+```
+
+**A downloaded file does not update itself.** The hosted page (and anything installed
+from it) fetches fresh on every launch, but a copy on your disk stays exactly as it
+was — by design, since checking for updates would mean a network request the app
+otherwise never makes. See [CHANGELOG.md](CHANGELOG.md).
+
 ## Building
 
 No package manager, no toolchain — just Python 3 and bash:

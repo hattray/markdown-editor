@@ -12,9 +12,15 @@ cd "$(dirname "$0")"
 
 python3 - <<'PY'
 import base64, re
+from datetime import datetime, timezone
 from pathlib import Path
 
 template = Path("src/index.template.html").read_text()
+
+# One source of truth for the version; the date tells a downloaded copy's age.
+VERSION = Path("VERSION").read_text().strip()
+BUILD_DATE = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+template = template.replace("__VERSION__", VERSION).replace("__BUILD_DATE__", BUILD_DATE)
 
 def katex_css():
     """KaTeX's stylesheet with its .woff2 fonts embedded as data: URIs."""
@@ -77,6 +83,7 @@ def build(out, include_heavy):
 
 build("index.html", True)
 build("index-lite.html", False)
+print(f"version {VERSION}, built {BUILD_DATE}")
 PY
 
 # The repo root is the deployable folder for the full build: the app plus the
