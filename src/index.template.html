@@ -1365,6 +1365,22 @@
     loadContent(text, file.name, handle);
   }
 
+  /* Dismissing the picker and a read that actually failed both land in the same
+     catch. Treating them alike meant an OS-blocked file (macOS gates reads from
+     protected folders, and other apps' containers like a Drive sync folder) just
+     did nothing at all. */
+  function reportFileFailure(e, writing) {
+    if (e && e.name === "AbortError") return;                       // picker dismissed
+    const blocked = e && ["NotAllowedError", "SecurityError", "NotReadableError"].includes(e.name);
+    if (blocked) {
+      setStatus("Your system blocked access to that file. On macOS allow this app under " +
+                "System Settings \u2192 Privacy & Security \u2192 Files & Folders, then try again.", true);
+    } else {
+      setStatus("Couldn't " + (writing ? "save" : "open") + " that file \u2014 " +
+                ((e && e.message) || "unknown error"), true);
+    }
+  }
+
   async function openPicker() {
     if (window.showOpenFilePicker) {
       try {
@@ -1373,14 +1389,14 @@
           excludeAcceptAllOption: false,
         });
         await openFromFile(await handle.getFile(), handle);
-      } catch (e) { /* user cancelled */ }
+      } catch (e) { reportFileFailure(e); }
     } else {
       $("file-input").click();
     }
   }
   $("file-input").addEventListener("change", (e) => {
     const f = e.target.files[0];
-    if (f) openFromFile(f, null);
+    if (f) openFromFile(f, null).catch(reportFileFailure);
     e.target.value = "";
   });
 
@@ -1420,7 +1436,7 @@
         filenameEl.value = handle.name;
         setDirty(false);
         setStatus("Saved to " + handle.name);
-      } catch (e) { /* user cancelled */ }
+      } catch (e) { reportFileFailure(e, true); }
     } else {
       download();
     }
@@ -1592,7 +1608,9 @@
       } catch (err) { /* fall through to plain File */ }
     }
     const file = item.getAsFile();
-    if (file) await openFromFile(file, null);
+    if (file) {
+      try { await openFromFile(file, null); } catch (err) { reportFileFailure(err); }
+    }
   });
 
   /* ── Editor behaviour ───────────────────────── */
@@ -2100,7 +2118,7 @@
         const handle = params.files[0];
         await openFromFile(await handle.getFile(), handle);
       } catch (e) {
-        setStatus("Could not open that file — " + (e.message || "unknown error"));
+        reportFileFailure(e);
       }
     });
   }

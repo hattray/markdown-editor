@@ -2,7 +2,7 @@
 <!--
   Free MD Viewer — https://github.com/hattray/markdown-editor
   Copyright (c) 2026 Kingsbridge Consultancy LLC. MIT licensed.
-  Version 1.0.0, built 2026-10-07.
+  Version 1.0.0, built 2026-10-09.
 
   This file bundles the following libraries. KaTeX and Mermaid ship no license
   banner of their own, so their notices are recorded here; the others carry
@@ -5429,6 +5429,22 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     loadContent(text, file.name, handle);
   }
 
+  /* Dismissing the picker and a read that actually failed both land in the same
+     catch. Treating them alike meant an OS-blocked file (macOS gates reads from
+     protected folders, and other apps' containers like a Drive sync folder) just
+     did nothing at all. */
+  function reportFileFailure(e, writing) {
+    if (e && e.name === "AbortError") return;                       // picker dismissed
+    const blocked = e && ["NotAllowedError", "SecurityError", "NotReadableError"].includes(e.name);
+    if (blocked) {
+      setStatus("Your system blocked access to that file. On macOS allow this app under " +
+                "System Settings \u2192 Privacy & Security \u2192 Files & Folders, then try again.", true);
+    } else {
+      setStatus("Couldn't " + (writing ? "save" : "open") + " that file \u2014 " +
+                ((e && e.message) || "unknown error"), true);
+    }
+  }
+
   async function openPicker() {
     if (window.showOpenFilePicker) {
       try {
@@ -5437,14 +5453,14 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
           excludeAcceptAllOption: false,
         });
         await openFromFile(await handle.getFile(), handle);
-      } catch (e) { /* user cancelled */ }
+      } catch (e) { reportFileFailure(e); }
     } else {
       $("file-input").click();
     }
   }
   $("file-input").addEventListener("change", (e) => {
     const f = e.target.files[0];
-    if (f) openFromFile(f, null);
+    if (f) openFromFile(f, null).catch(reportFileFailure);
     e.target.value = "";
   });
 
@@ -5484,7 +5500,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
         filenameEl.value = handle.name;
         setDirty(false);
         setStatus("Saved to " + handle.name);
-      } catch (e) { /* user cancelled */ }
+      } catch (e) { reportFileFailure(e, true); }
     } else {
       download();
     }
@@ -5656,7 +5672,9 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
       } catch (err) { /* fall through to plain File */ }
     }
     const file = item.getAsFile();
-    if (file) await openFromFile(file, null);
+    if (file) {
+      try { await openFromFile(file, null); } catch (err) { reportFileFailure(err); }
+    }
   });
 
   /* ── Editor behaviour ───────────────────────── */
@@ -5907,7 +5925,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
      (a lite build, SSO, sync) — those need a conversation, not a feature flag. */
   const helpPop = $("help-pop");
   const APP_VERSION = "1.0.0";
-  const BUILD_DATE = "2026-10-07";
+  const BUILD_DATE = "2026-10-09";
   const MOD = isMac ? "⌘" : "Ctrl+";
   function buildHelp() {
     helpPop.innerHTML =
@@ -6164,7 +6182,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
         const handle = params.files[0];
         await openFromFile(await handle.getFile(), handle);
       } catch (e) {
-        setStatus("Could not open that file — " + (e.message || "unknown error"));
+        reportFileFailure(e);
       }
     });
   }

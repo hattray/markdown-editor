@@ -9,6 +9,14 @@ and in the app's **?** panel, so a downloaded file can always be identified.
 
 ## [Unreleased]
 
+### Fixed
+
+- A file the operating system refuses to read now says so. Dismissing the picker
+  and a genuinely failed read landed in the same `catch`, so a file blocked by
+  macOS's Files & Folders privacy controls — which gate protected folders and
+  other apps' containers, such as a Drive sync folder — appeared to do nothing at
+  all. Cancelling is still silent.
+
 ## [1.0.0] — 2026-10-07
 
 First tagged release. The app has been live at
