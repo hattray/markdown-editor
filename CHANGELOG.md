@@ -21,6 +21,18 @@ and in the app's **?** panel, so a downloaded file can always be identified.
 - **New** adds a document instead of closing the open set, so it no longer needs
   a confirmation. An untouched welcome or blank document is reused rather than
   leaving an empty tab behind.
+- Re-opening a file switches to the document already open instead of adding a
+  second copy, compared with `isSameEntry` rather than by name.
+
+### Fixed
+
+- A multi-file launch opened only some of the files. Three causes: the manifest
+  had no `launch_handler`, so Chrome's default `auto` mode could *navigate* the
+  app window per launch and a navigation reloads the page, resetting the open
+  set; concurrent opens could interleave; and the launch consumer was registered
+  before startup finished, so files could be loaded and then clobbered by the
+  boot code. The manifest now sets `client_mode: "focus-existing"`, opens run
+  through one promise chain, and the consumer is registered last.
 
 ### Fixed
 

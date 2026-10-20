@@ -2724,11 +2724,28 @@ return Pe}()
     if (tab) activate(+tab.dataset.open);
   });
 
+  /* Is this file already open? isSameEntry is the only reliable way to compare
+     two handles; without handles the name is all we have to go on. */
+  async function indexOfOpen(file, handle) {
+    for (let i = 0; i < docs.length; i++) {
+      const d = docs[i];
+      if (d.handle && handle) {
+        try { if (await d.handle.isSameEntry(handle)) return i; } catch (e) { /* ignore */ }
+      } else if (!d.handle && !handle && d.opened && d.name === file.name) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
   /* Reading every file before touching the editor keeps one unreadable file
      from leaving the set half-open. */
   async function openDocs(entries) {
     const loaded = [];
+    let alreadyOpen = -1;
     for (const { file, handle } of entries) {
+      const at = await indexOfOpen(file, handle);
+      if (at !== -1) { alreadyOpen = at; continue; }   // don't open a second copy
       try {
         loaded.push({
           name: file.name,
@@ -2739,7 +2756,13 @@ return Pe}()
         });
       } catch (err) { reportFileFailure(err); }
     }
-    if (!loaded.length) return;
+    if (!loaded.length) {
+      if (alreadyOpen !== -1) {
+        activate(alreadyOpen);
+        setStatus(filenameEl.value + " is already open");
+      }
+      return;
+    }
 
     captureActive();
     // an untouched welcome/blank document is replaced rather than kept as a tab
@@ -2753,7 +2776,15 @@ return Pe}()
       : "Opened " + loaded.length + " documents — switch between them above");
   }
 
-  const openFromFile = (file, handle) => openDocs([{ file, handle }]);
+  /* The OS can deliver a multi-file launch as several launches in a row. Running
+     them through one chain stops a later batch from racing an earlier one. */
+  let openChain = Promise.resolve();
+  function queueOpen(entries) {
+    openChain = openChain.then(() => openDocs(entries)).catch(reportFileFailure);
+    return openChain;
+  }
+
+  const openFromFile = (file, handle) => queueOpen([{ file, handle }]);
 
   /* Dismissing the picker and a read that actually failed both land in the same
      catch. Treating them alike meant an OS-blocked file (macOS gates reads from
@@ -2779,7 +2810,7 @@ return Pe}()
           types: [{ description: "Markdown", accept: { "text/markdown": [".md", ".markdown", ".mdown", ".mkd"], "text/plain": [".txt"] } }],
           excludeAcceptAllOption: false,
         });
-        await openDocs(await Promise.all(
+        await queueOpen(await Promise.all(
           handles.map(async (h) => ({ file: await h.getFile(), handle: h }))
         ));
       } catch (e) { reportFileFailure(e); }
@@ -2789,7 +2820,7 @@ return Pe}()
   }
   $("file-input").addEventListener("change", (e) => {
     const files = [...e.target.files];
-    if (files.length) openDocs(files.map((file) => ({ file, handle: null }))).catch(reportFileFailure);
+    if (files.length) queueOpen(files.map((file) => ({ file, handle: null })));
     e.target.value = "";
   });
 
@@ -3026,7 +3057,7 @@ return Pe}()
       const file = item.getAsFile();
       if (file) entries.push({ file, handle: null });
     }
-    try { await openDocs(entries); } catch (err) { reportFileFailure(err); }
+    await queueOpen(entries);
   });
 
   /* ── Editor behaviour ───────────────────────── */
@@ -3523,22 +3554,6 @@ return Pe}()
   // offline. It is skipped when the file is opened straight from disk.
   // no service worker in the lite build: it ships as a single standalone file
 
-  // When the installed app is launched by opening a .md file (double-click,
-  // "Open with"), we receive real file handles — so Save writes back to that
-  // very file, exactly like the drag-and-drop path.
-  if ("launchQueue" in window && typeof LaunchParams !== "undefined" && "files" in LaunchParams.prototype) {
-    launchQueue.setConsumer(async (params) => {
-      if (!params.files || !params.files.length) return;
-      try {
-        await openDocs(await Promise.all(
-          params.files.map(async (h) => ({ file: await h.getFile(), handle: h }))
-        ));
-      } catch (e) {
-        reportFileFailure(e);
-      }
-    });
-  }
-
   /* ── Boot ───────────────────────────────────── */
   const WELCOME = `# Free MD Viewer
 
@@ -3621,6 +3636,24 @@ Shortcuts: **${isMac ? "⌘" : "Ctrl+"}S** save · **${isMac ? "⌘⇧" : "Ctrl+
   editor.setSelectionRange(0, 0);
   editor.scrollTop = 0;
   previewPane.scrollTop = 0;
+
+  /* Registered last, on purpose: a pending launch fires the moment a consumer is
+     set, and the boot code above would otherwise reset docs[] underneath it. */
+  // When the installed app is launched by opening a .md file (double-click,
+  // "Open with"), we receive real file handles — so Save writes back to that
+  // very file, exactly like the drag-and-drop path.
+  if ("launchQueue" in window && typeof LaunchParams !== "undefined" && "files" in LaunchParams.prototype) {
+    launchQueue.setConsumer(async (params) => {
+      if (!params.files || !params.files.length) return;
+      try {
+        await queueOpen(await Promise.all(
+          params.files.map(async (h) => ({ file: await h.getFile(), handle: h }))
+        ));
+      } catch (e) {
+        reportFileFailure(e);
+      }
+    });
+  }
 })();
 </script>
 </body>
