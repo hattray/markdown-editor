@@ -24,6 +24,10 @@ the app's own code ships readable.
 ## Features
 
 - **Drag & drop** or file-picker open; accepts `.md`, `.markdown`, `.txt`
+- **Several documents at once** — select multiple files and open them together (right-click → Open
+  With, the picker, or a multi-file drop). A tab strip appears above the editor; each document keeps
+  its own file handle, so Save still writes back to the right file. Only the active document is kept
+  as a `localStorage` draft, so closing the window warns if *any* open document has unsaved changes
 - **Live split preview** (Edit / Split / Preview modes) with scroll sync; phones open in Preview
 - **Save writes back to the original file** via the File System Access API (Chrome/Edge — works
   for both picked and dropped files); Save-As and a plain download fallback everywhere else

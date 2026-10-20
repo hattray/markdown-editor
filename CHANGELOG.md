@@ -9,6 +9,16 @@ and in the app's **?** panel, so a downloaded file can always be identified.
 
 ## [Unreleased]
 
+### Added
+
+- Opening several files at once. The launch handler read `params.files[0]` and
+  discarded the rest, so selecting five files in Finder and choosing "Open With"
+  opened one of them silently. All the entry points — OS launch, the file picker
+  (now `multiple: true`), the fallback input and drag-and-drop — now take every
+  file, and a tab strip above the editor switches between them. Each document
+  keeps its own handle, so Save writes back to the right file, and switching
+  captures the editor first so edits survive a round trip.
+
 ### Fixed
 
 - A file the operating system refuses to read now says so. Dismissing the picker

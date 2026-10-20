@@ -2,7 +2,7 @@
 <!--
   Free MD Viewer (lite) — https://github.com/hattray/markdown-editor
   Copyright (c) 2026 Kingsbridge Consultancy LLC. MIT licensed.
-  Version 1.0.0, built 2026-10-09.
+  Version 1.0.0, built 2026-10-20.
 
   This file bundles the following libraries, each of which carries its own
   license banner inside its minified code below.
@@ -410,6 +410,50 @@
   [data-theme="dark"] .hljs-string, [data-theme="dark"] .hljs-regexp, [data-theme="dark"] .hljs-addition, [data-theme="dark"] .hljs-meta .hljs-string { color: #a5d6ff; }
   [data-theme="dark"] .hljs-built_in, [data-theme="dark"] .hljs-symbol, [data-theme="dark"] .hljs-type { color: #ffa657; }
 
+  /* ── Open documents ──────────────────────────── */
+  #doc-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: none;
+    padding: 5px 10px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  #doc-tabs[hidden] { display: none; }
+  .doc-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+    max-width: 220px;
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--text-soft);
+    background: var(--bg);
+    border: 1px solid var(--border-soft);
+    border-radius: 7px;
+    padding: 4px 6px 4px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .doc-tab:hover { color: var(--text); }
+  .doc-tab.active {
+    background: var(--panel);
+    border-color: var(--accent);
+    color: var(--text);
+  }
+  .doc-tab-name { overflow: hidden; text-overflow: ellipsis; }
+  .doc-tab-close {
+    opacity: 0.4;
+    font-size: 10px;
+    padding: 1px 3px;
+    border-radius: 4px;
+  }
+  .doc-tab-close:hover { opacity: 1; color: var(--danger); }
+
   /* ── Find & replace ──────────────────────────── */
   #find-bar {
     display: none;
@@ -761,7 +805,7 @@
       --code-bg: #f6f6f7; --accent: #2563eb;
     }
     header, footer, #editor-pane, #drop-overlay, #toc, #reader-pop, #export-pop,
-    .blk-tools { display: none !important; }
+    #doc-tabs, .blk-tools { display: none !important; }
     html, body { height: auto; overflow: visible; display: block; }
     main { display: block; }
     #preview-pane { display: block !important; overflow: visible; }
@@ -840,6 +884,8 @@
   </button>
 </header>
 
+<nav id="doc-tabs" hidden aria-label="Open documents"></nav>
+
 <main>
   <div id="editor-pane">
     <div id="find-bar">
@@ -870,7 +916,7 @@
 
 <div id="drop-overlay"><div class="card">Drop your markdown file<div class="sub">.md, .markdown or any text file — it never leaves your browser</div></div></div>
 
-<input type="file" id="file-input" accept=".md,.markdown,.mdown,.mkd,.txt,text/markdown,text/plain" style="display:none">
+<input type="file" id="file-input" multiple accept=".md,.markdown,.mdown,.mkd,.txt,text/markdown,text/plain" style="display:none">
 
 <script>/**
  * marked v14.1.4 - a markdown parser
@@ -2562,9 +2608,12 @@ return Pe}()
   }
 
   function setDirty(v) {
+    const changed = dirty !== v;
     dirty = v;
     dirtyDot.classList.toggle("on", v);
+    if (docs[active]) docs[active].dirty = v;
     updateTitle();
+    if (changed) renderTabs();   // only on a transition, not on every keystroke
   }
 
   /* ── Draft persistence (localStorage) ───────── */
@@ -2591,24 +2640,120 @@ return Pe}()
   }
 
   /* ── File loading ───────────────────────────── */
-  function loadContent(text, name, handle) {
-    editor.value = text.replace(/\r\n/g, "\n");
-    filenameEl.value = name || "untitled.md";
-    fileHandle = handle || null;
-    fileOpened = true;
-    setDirty(false);
-    render();
-    saveDraft();
-    editor.setSelectionRange(0, 0);
-    editor.scrollTop = 0;
-    previewPane.scrollTop = 0;
-    setStatus("Opened " + filenameEl.value + (fileHandle ? " — Save writes back to the original file" : ""));
+  /* ── Open documents ─────────────────────────────
+     A launch can carry several files, so the editor is the live view of
+     docs[active] rather than the only document there is. Switching captures the
+     editor back into its entry first, so edits survive a round trip, and each
+     entry keeps its own handle so Save still writes to the right file. */
+  let docs = [];
+  let active = -1;
+  const tabsEl = $("doc-tabs");
+  const anyDirty = () => dirty || docs.some((d, i) => i !== active && d.dirty);
+
+  function captureActive() {
+    const d = docs[active];
+    if (!d) return;
+    d.text = editor.value;
+    d.name = filenameEl.value;
+    d.handle = fileHandle;
+    d.dirty = dirty;
+    d.opened = fileOpened;
+    d.sel = [editor.selectionStart, editor.selectionEnd];
+    d.scroll = editor.scrollTop;
   }
 
-  async function openFromFile(file, handle) {
-    const text = await file.text();
-    loadContent(text, file.name, handle);
+  function renderTabs() {
+    if (docs.length < 2) { tabsEl.hidden = true; tabsEl.replaceChildren(); return; }
+    tabsEl.hidden = false;
+    tabsEl.replaceChildren();
+    docs.forEach((d, i) => {
+      const tab = document.createElement("button");
+      tab.type = "button";
+      tab.className = "doc-tab" + (i === active ? " active" : "");
+      tab.dataset.open = i;
+      tab.title = d.name || "untitled.md";
+      const label = document.createElement("span");
+      label.className = "doc-tab-name";
+      label.textContent = ((i === active ? dirty : d.dirty) ? "• " : "") + (d.name || "untitled.md");
+      const close = document.createElement("span");
+      close.className = "doc-tab-close";
+      close.dataset.close = i;
+      close.title = "Close";
+      close.textContent = "✕";
+      tab.append(label, close);
+      tabsEl.appendChild(tab);
+    });
   }
+
+  function activate(i) {
+    const d = docs[i];
+    if (!d || i === active) return;
+    captureActive();
+    active = i;
+    editor.value = d.text || "";
+    filenameEl.value = d.name || "untitled.md";
+    fileHandle = d.handle || null;
+    fileOpened = !!d.opened;
+    dirty = !!d.dirty;
+    dirtyDot.classList.toggle("on", dirty);
+    updateTitle();
+    render();
+    editor.setSelectionRange(...(d.sel || [0, 0]));
+    editor.scrollTop = d.scroll || 0;
+    previewPane.scrollTop = 0;
+    renderTabs();
+    saveDraft();
+  }
+
+  function closeDoc(i) {
+    const d = docs[i];
+    if (!d) return;
+    const wasActive = i === active;
+    if ((wasActive ? dirty : d.dirty) &&
+        !confirm("Close " + (d.name || "this document") + "? It has unsaved changes.")) return;
+    docs.splice(i, 1);
+    if (!docs.length) { active = -1; resetToBlank(); return; }
+    if (wasActive) { active = -1; activate(Math.min(i, docs.length - 1)); }
+    else { if (i < active) active -= 1; renderTabs(); }
+  }
+
+  tabsEl.addEventListener("click", (e) => {
+    const close = e.target.closest("[data-close]");
+    if (close) { e.stopPropagation(); closeDoc(+close.dataset.close); return; }
+    const tab = e.target.closest("[data-open]");
+    if (tab) activate(+tab.dataset.open);
+  });
+
+  /* Reading every file before touching the editor keeps one unreadable file
+     from leaving the set half-open. */
+  async function openDocs(entries) {
+    const loaded = [];
+    for (const { file, handle } of entries) {
+      try {
+        loaded.push({
+          name: file.name,
+          text: (await file.text()).replace(/\r\n/g, "\n"),
+          handle: handle || null,
+          dirty: false,
+          opened: true,
+        });
+      } catch (err) { reportFileFailure(err); }
+    }
+    if (!loaded.length) return;
+
+    captureActive();
+    // an untouched welcome/blank document is replaced rather than kept as a tab
+    const keep = docs.filter((d, i) => !(i === active && !d.opened && !d.dirty));
+    const first = keep.length;
+    docs = keep.concat(loaded);
+    active = -1;
+    activate(first);
+    setStatus(loaded.length === 1
+      ? "Opened " + loaded[0].name + (loaded[0].handle ? " — Save writes back to the original file" : "")
+      : "Opened " + loaded.length + " documents — switch between them above");
+  }
+
+  const openFromFile = (file, handle) => openDocs([{ file, handle }]);
 
   /* Dismissing the picker and a read that actually failed both land in the same
      catch. Treating them alike meant an OS-blocked file (macOS gates reads from
@@ -2629,19 +2774,22 @@ return Pe}()
   async function openPicker() {
     if (window.showOpenFilePicker) {
       try {
-        const [handle] = await window.showOpenFilePicker({
+        const handles = await window.showOpenFilePicker({
+          multiple: true,
           types: [{ description: "Markdown", accept: { "text/markdown": [".md", ".markdown", ".mdown", ".mkd"], "text/plain": [".txt"] } }],
           excludeAcceptAllOption: false,
         });
-        await openFromFile(await handle.getFile(), handle);
+        await openDocs(await Promise.all(
+          handles.map(async (h) => ({ file: await h.getFile(), handle: h }))
+        ));
       } catch (e) { reportFileFailure(e); }
     } else {
       $("file-input").click();
     }
   }
   $("file-input").addEventListener("change", (e) => {
-    const f = e.target.files[0];
-    if (f) openFromFile(f, null).catch(reportFileFailure);
+    const files = [...e.target.files];
+    if (files.length) openDocs(files.map((file) => ({ file, handle: null }))).catch(reportFileFailure);
     e.target.value = "";
   });
 
@@ -2812,14 +2960,24 @@ return Pe}()
 
   /* ── New document ───────────────────────────── */
   function newDoc() {
-    if (dirty && !confirm("Discard unsaved changes and start a new document?")) return;
+    const many = docs.length > 1;
+    if (anyDirty() && !confirm(many
+      ? "Close all open documents and start a new one? Some have unsaved changes."
+      : "Discard unsaved changes and start a new document?")) return;
+    resetToBlank();
+    try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+  }
+
+  function resetToBlank() {
     fileHandle = null;
     fileOpened = false;
     editor.value = "";
     filenameEl.value = "untitled.md";
+    docs = [{ name: "untitled.md", text: "", handle: null, dirty: false, opened: false }];
+    active = 0;
     setDirty(false);
     render();
-    try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+    renderTabs();
     editor.focus();
   }
 
@@ -2840,22 +2998,24 @@ return Pe}()
     e.preventDefault();
     dragDepth = 0;
     overlay.classList.remove("on");
-    const item = e.dataTransfer.items && e.dataTransfer.items[0];
-    if (!item || item.kind !== "file") return;
-    // Prefer a real file handle so Save can write back to the dropped file.
-    if (item.getAsFileSystemHandle) {
-      try {
-        const handle = await item.getAsFileSystemHandle();
-        if (handle && handle.kind === "file") {
-          await openFromFile(await handle.getFile(), handle);
-          return;
-        }
-      } catch (err) { /* fall through to plain File */ }
+    const items = [...(e.dataTransfer.items || [])].filter((i) => i.kind === "file");
+    if (!items.length) return;
+    const entries = [];
+    for (const item of items) {
+      // Prefer a real file handle so Save can write back to the dropped file.
+      if (item.getAsFileSystemHandle) {
+        try {
+          const handle = await item.getAsFileSystemHandle();
+          if (handle && handle.kind === "file") {
+            entries.push({ file: await handle.getFile(), handle });
+            continue;
+          }
+        } catch (err) { /* fall through to the plain File below */ }
+      }
+      const file = item.getAsFile();
+      if (file) entries.push({ file, handle: null });
     }
-    const file = item.getAsFile();
-    if (file) {
-      try { await openFromFile(file, null); } catch (err) { reportFileFailure(err); }
-    }
+    try { await openDocs(entries); } catch (err) { reportFileFailure(err); }
   });
 
   /* ── Editor behaviour ───────────────────────── */
@@ -2935,7 +3095,9 @@ return Pe}()
     if (!/\.(md|markdown|mdown|mkd|txt)$/i.test(name)) name += ".md";
     filenameEl.value = name;
     fileHandle = null; // renamed → next Save asks where to put it
+    if (docs[active]) docs[active].name = name;
     updateTitle();
+    renderTabs();
     saveDraft();
   });
   filenameEl.addEventListener("keydown", (e) => { if (e.key === "Enter") filenameEl.blur(); });
@@ -3079,7 +3241,8 @@ return Pe}()
   });
 
   window.addEventListener("beforeunload", (e) => {
-    if (dirty) { e.preventDefault(); e.returnValue = ""; }
+    // only the active document is kept as a draft, so warn for any of them
+    if (anyDirty()) { e.preventDefault(); e.returnValue = ""; }
   });
 
   /* ── Buttons ────────────────────────────────── */
@@ -3106,7 +3269,7 @@ return Pe}()
      (a lite build, SSO, sync) — those need a conversation, not a feature flag. */
   const helpPop = $("help-pop");
   const APP_VERSION = "1.0.0";
-  const BUILD_DATE = "2026-10-09";
+  const BUILD_DATE = "2026-10-20";
   const MOD = isMac ? "⌘" : "Ctrl+";
   function buildHelp() {
     helpPop.innerHTML =
@@ -3356,8 +3519,9 @@ return Pe}()
     launchQueue.setConsumer(async (params) => {
       if (!params.files || !params.files.length) return;
       try {
-        const handle = params.files[0];
-        await openFromFile(await handle.getFile(), handle);
+        await openDocs(await Promise.all(
+          params.files.map(async (h) => ({ file: await h.getFile(), handle: h }))
+        ));
       } catch (e) {
         reportFileFailure(e);
       }
@@ -3433,6 +3597,10 @@ Shortcuts: **${isMac ? "⌘" : "Ctrl+"}S** save · **${isMac ? "⌘⇧" : "Ctrl+
 `;
 
   if (!loadDraft()) editor.value = WELCOME;
+  const restoredName = filenameEl.value !== "untitled.md";
+  fileOpened = restoredName;
+  docs = [{ name: filenameEl.value, text: editor.value, handle: null, dirty: false, opened: restoredName }];
+  active = 0;
   updateTitle();
   render();
   // Focusing a textarea leaves the caret at the end of its text and scrolls
