@@ -18,6 +18,9 @@ and in the app's **?** panel, so a downloaded file can always be identified.
   file, and a tab strip above the editor switches between them. Each document
   keeps its own handle, so Save writes back to the right file, and switching
   captures the editor first so edits survive a round trip.
+- **New** adds a document instead of closing the open set, so it no longer needs
+  a confirmation. An untouched welcome or blank document is reused rather than
+  leaving an empty tab behind.
 
 ### Fixed
 

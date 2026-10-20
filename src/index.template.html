@@ -1714,13 +1714,24 @@
   }
 
   /* ── New document ───────────────────────────── */
+  /* New adds a document rather than replacing the set — with tabs on screen,
+     wiping them would be a surprise. Nothing is discarded, so it needs no
+     confirmation; an untouched welcome or blank document is reused instead of
+     piling up empty tabs. */
   function newDoc() {
-    const many = docs.length > 1;
-    if (anyDirty() && !confirm(many
-      ? "Close all open documents and start a new one? Some have unsaved changes."
-      : "Discard unsaved changes and start a new document?")) return;
-    resetToBlank();
-    try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+    captureActive();
+    const cur = docs[active];
+    if (cur && !cur.opened && !cur.dirty) {
+      Object.assign(cur, { name: "untitled.md", text: "", handle: null, sel: [0, 0], scroll: 0 });
+      const i = active;
+      active = -1;
+      activate(i);
+    } else {
+      docs.push({ name: "untitled.md", text: "", handle: null, dirty: false, opened: false });
+      active = -1;
+      activate(docs.length - 1);
+    }
+    editor.focus();
   }
 
   function resetToBlank() {
