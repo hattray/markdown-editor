@@ -5550,7 +5550,9 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
       const d = docs[i];
       if (d.handle && handle) {
         try { if (await d.handle.isSameEntry(handle)) return i; } catch (e) { /* ignore */ }
-      } else if (!d.handle && !handle && d.opened && d.name === file.name) {
+      } else if (!d.handle && d.opened && d.name === file.name) {
+        // A draft restored from localStorage has no handle, so the same file
+        // arriving from a launch would otherwise open a second time.
         return i;
       }
     }
@@ -5564,7 +5566,17 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     let alreadyOpen = -1;
     for (const { file, handle } of entries) {
       const at = await indexOfOpen(file, handle);
-      if (at !== -1) { alreadyOpen = at; continue; }   // don't open a second copy
+      if (at !== -1) {
+        // A restored draft can now be connected to the real file, so Save writes
+        // back to it instead of asking where to put it. Any unsaved text is kept.
+        const d = docs[at];
+        if (!d.handle && handle) {
+          d.handle = handle;
+          if (at === active) fileHandle = handle;
+        }
+        alreadyOpen = at;
+        continue;                                      // don't open a second copy
+      }
       try {
         loaded.push({
           name: file.name,

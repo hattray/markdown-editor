@@ -33,6 +33,10 @@ and in the app's **?** panel, so a downloaded file can always be identified.
   before startup finished, so files could be loaded and then clobbered by the
   boot code. The manifest now sets `client_mode: "focus-existing"`, opens run
   through one promise chain, and the consumer is registered last.
+- A file already open as a restored draft opened a second time. The draft has no
+  file handle, so it never matched the incoming handle; it is now matched by name
+  and adopts the handle, which also means Save writes back to the file instead of
+  asking where to put it.
 
 ### Fixed
 
