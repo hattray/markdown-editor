@@ -11,6 +11,13 @@ and in the app's **?** panel, so a downloaded file can always be identified.
 
 ### Added
 
+- Edits made to an open file by another editor are noticed. A bar offers to reload
+  it, and **Save now asks before overwriting a file that changed on disk** — it
+  previously wrote straight over another editor's work with no warning, losing it
+  silently. Browsers get no file-change events, so the handle is stat'd (via
+  `getFile().lastModified`, which does not read the contents) on window focus, on
+  a tab switch, and on a 20-second timer while visible.
+
 - Opening several files at once. The launch handler read `params.files[0]` and
   discarded the rest, so selecting five files in Finder and choosing "Open With"
   opened one of them silently. All the entry points — OS launch, the file picker

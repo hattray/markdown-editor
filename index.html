@@ -2,7 +2,7 @@
 <!--
   Free MD Viewer — https://github.com/hattray/markdown-editor
   Copyright (c) 2026 Kingsbridge Consultancy LLC. MIT licensed.
-  Version 1.0.0, built 2026-10-20.
+  Version 1.0.0, built 2026-10-26.
 
   This file bundles the following libraries. KaTeX and Mermaid ship no license
   banner of their own, so their notices are recorded here; the others carry
@@ -41,6 +41,7 @@
     --accent-soft: rgba(37, 99, 235, 0.08);
     --code-bg: #f4f4f5;
     --danger: #dc2626;
+    --warn: #b45309;
     --shadow: 0 1px 2px rgba(0,0,0,0.04);
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
@@ -57,6 +58,7 @@
     --accent-soft: rgba(96, 165, 250, 0.10);
     --code-bg: #1f1f23;
     --danger: #f87171;
+    --warn: #fbbf24;
     --shadow: none;
   }
 
@@ -416,6 +418,35 @@
   [data-theme="dark"] .hljs-attr, [data-theme="dark"] .hljs-attribute, [data-theme="dark"] .hljs-literal, [data-theme="dark"] .hljs-number, [data-theme="dark"] .hljs-operator, [data-theme="dark"] .hljs-variable, [data-theme="dark"] .hljs-selector-attr, [data-theme="dark"] .hljs-selector-class, [data-theme="dark"] .hljs-selector-id, [data-theme="dark"] .hljs-selector-pseudo, [data-theme="dark"] .hljs-meta { color: #79c0ff; }
   [data-theme="dark"] .hljs-string, [data-theme="dark"] .hljs-regexp, [data-theme="dark"] .hljs-addition, [data-theme="dark"] .hljs-meta .hljs-string { color: #a5d6ff; }
   [data-theme="dark"] .hljs-built_in, [data-theme="dark"] .hljs-symbol, [data-theme="dark"] .hljs-type { color: #ffa657; }
+
+  /* ── Changed-on-disk notice ──────────────────── */
+  #stale-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: none;
+    padding: 7px 12px;
+    font-size: 12.5px;
+    color: var(--warn);
+    background: color-mix(in srgb, var(--warn) 10%, var(--panel));
+    border-bottom: 1px solid color-mix(in srgb, var(--warn) 35%, var(--border));
+  }
+  #stale-bar[hidden] { display: none; }
+  #stale-msg { flex: 1; min-width: 0; }
+  #stale-bar button {
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 500;
+    flex: none;
+    padding: 3px 9px;
+    border-radius: 6px;
+    border: 1px solid currentColor;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+  #stale-bar button:hover { background: color-mix(in srgb, var(--warn) 18%, transparent); }
+  .doc-tab.stale { border-color: var(--warn); }
 
   /* ── Open documents ──────────────────────────── */
   #doc-tabs {
@@ -812,7 +843,7 @@
       --code-bg: #f6f6f7; --accent: #2563eb;
     }
     header, footer, #editor-pane, #drop-overlay, #toc, #reader-pop, #export-pop,
-    #doc-tabs, .blk-tools { display: none !important; }
+    #doc-tabs, #stale-bar, .blk-tools { display: none !important; }
     html, body { height: auto; overflow: visible; display: block; }
     main { display: block; }
     #preview-pane { display: block !important; overflow: visible; }
@@ -893,6 +924,12 @@
 </header>
 
 <nav id="doc-tabs" hidden aria-label="Open documents"></nav>
+
+<div id="stale-bar" hidden role="status">
+  <span id="stale-msg"></span>
+  <button id="stale-reload" type="button">Reload from disk</button>
+  <button id="stale-keep" type="button">Keep my version</button>
+</div>
 
 <main>
   <div id="editor-pane">
@@ -5459,6 +5496,81 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
   }
 
   /* ── File loading ───────────────────────────── */
+  /* ── Edited elsewhere? ──────────────────────────
+     Nothing notifies a page that a file changed on disk, but getFile() hands
+     back a fresh File with a lastModified stamp without reading the contents.
+     So: stat on focus, on a tab switch and on a slow timer, and never write
+     over a newer file without asking. */
+  const staleBar = $("stale-bar");
+
+  async function statDoc(d) {
+    if (!d || !d.handle || d.mtime == null) return false;
+    try {
+      const f = await d.handle.getFile();
+      d.stale = f.lastModified !== d.mtime;
+    } catch (e) {
+      d.stale = false;        // permission gone or file removed; leave it alone
+    }
+    return !!d.stale;
+  }
+
+  function paintStale() {
+    const d = docs[active];
+    const show = !!(d && d.stale);
+    staleBar.hidden = !show;
+    if (show) {
+      $("stale-msg").textContent = (d.name || "This file") +
+        " changed on disk" + (dirty ? " — reloading discards your unsaved edits" : "");
+    }
+  }
+
+  async function checkForExternalEdits(all) {
+    const before = docs.map((d) => !!d.stale);
+    if (all) { for (const d of docs) await statDoc(d); }
+    else await statDoc(docs[active]);
+    paintStale();
+    if (docs.some((d, i) => !!d.stale !== before[i])) renderTabs();
+  }
+
+  async function reloadActive() {
+    const d = docs[active];
+    if (!d || !d.handle) return;
+    if (dirty && !confirm("Reload " + (d.name || "this file") +
+        " from disk? Your unsaved changes will be lost.")) return;
+    try {
+      const f = await d.handle.getFile();
+      const caret = editor.selectionStart, scroll = editor.scrollTop;
+      editor.value = (await f.text()).replace(/\r\n/g, "\n");
+      d.mtime = f.lastModified;
+      d.stale = false;
+      setDirty(false);
+      render();
+      // keep your place rather than jumping to the top
+      editor.setSelectionRange(Math.min(caret, editor.value.length), Math.min(caret, editor.value.length));
+      editor.scrollTop = Math.min(scroll, editor.scrollHeight);
+      saveDraft();
+      paintStale();
+      renderTabs();
+      setStatus("Reloaded " + d.name + " from disk");
+    } catch (e) { reportFileFailure(e); }
+  }
+
+  $("stale-reload").addEventListener("click", reloadActive);
+  $("stale-keep").addEventListener("click", () => {
+    // dismiss the notice, but Save still asks before overwriting
+    if (docs[active]) docs[active].stale = false;
+    paintStale();
+    renderTabs();
+  });
+
+  window.addEventListener("focus", () => checkForExternalEdits(true));
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") checkForExternalEdits(true);
+  });
+  setInterval(() => {
+    if (document.visibilityState === "visible") checkForExternalEdits(false);
+  }, 20000);
+
   /* ── Open documents ─────────────────────────────
      A launch can carry several files, so the editor is the live view of
      docs[active] rather than the only document there is. Switching captures the
@@ -5488,7 +5600,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     docs.forEach((d, i) => {
       const tab = document.createElement("button");
       tab.type = "button";
-      tab.className = "doc-tab" + (i === active ? " active" : "");
+      tab.className = "doc-tab" + (i === active ? " active" : "") + (d.stale ? " stale" : "");
       tab.dataset.open = i;
       tab.title = d.name || "untitled.md";
       const label = document.createElement("span");
@@ -5522,6 +5634,8 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     previewPane.scrollTop = 0;
     renderTabs();
     saveDraft();
+    paintStale();
+    checkForExternalEdits(false);
   }
 
   function closeDoc(i) {
@@ -5582,6 +5696,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
           name: file.name,
           text: (await file.text()).replace(/\r\n/g, "\n"),
           handle: handle || null,
+          mtime: file.lastModified,     // to notice edits made elsewhere
           dirty: false,
           opened: true,
         });
@@ -5668,8 +5783,23 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
         if (fileHandle.queryPermission && (await fileHandle.queryPermission({ mode: "readwrite" })) !== "granted") {
           if ((await fileHandle.requestPermission({ mode: "readwrite" })) !== "granted") throw new Error("denied");
         }
+        const doc = docs[active];
+        if (doc && doc.mtime != null) {
+          const current = await fileHandle.getFile();
+          if (current.lastModified !== doc.mtime &&
+              !confirm((doc.name || "This file") + " changed on disk since you opened it.\n\n" +
+                       "Saving replaces those changes with your version. Continue?")) {
+            return;                       // leave their changes alone
+          }
+        }
         await writeToHandle(fileHandle);
+        if (doc) {
+          try { doc.mtime = (await fileHandle.getFile()).lastModified; } catch (e) { /* ignore */ }
+          doc.stale = false;
+        }
         setDirty(false);
+        paintStale();
+        renderTabs();
         setStatus("Saved to " + filenameEl.value);
         return;
       } catch (e) {
@@ -5688,6 +5818,11 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
         });
         await writeToHandle(handle);
         fileHandle = handle;
+        if (docs[active]) {
+          try { docs[active].mtime = (await handle.getFile()).lastModified; } catch (e) { /* ignore */ }
+          docs[active].handle = handle;
+          docs[active].stale = false;
+        }
         filenameEl.value = handle.name;
         setDirty(false);
         setStatus("Saved to " + handle.name);
@@ -6142,7 +6277,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
      (a lite build, SSO, sync) — those need a conversation, not a feature flag. */
   const helpPop = $("help-pop");
   const APP_VERSION = "1.0.0";
-  const BUILD_DATE = "2026-10-20";
+  const BUILD_DATE = "2026-10-26";
   const MOD = isMac ? "⌘" : "Ctrl+";
   function buildHelp() {
     helpPop.innerHTML =

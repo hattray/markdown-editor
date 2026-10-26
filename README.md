@@ -24,6 +24,10 @@ the app's own code ships readable.
 ## Features
 
 - **Drag & drop** or file-picker open; accepts `.md`, `.markdown`, `.txt`
+- **Notices edits made elsewhere** — if another editor changes an open file, a bar offers to
+  reload it, and **Save asks before overwriting** a file that changed on disk since you opened
+  it. Browsers get no file-change events, so this stats the handle on focus, on a tab switch
+  and on a slow timer
 - **Several documents at once** — select multiple files and open them together (right-click → Open
   With, the picker, or a multi-file drop). A tab strip appears above the editor; each document keeps
   its own file handle, so Save still writes back to the right file. Only the active document is kept
