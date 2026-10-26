@@ -9,22 +9,24 @@ and in the app's **?** panel, so a downloaded file can always be identified.
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-10-26
+
+Multiple documents, and the app now notices when a file changes underneath it.
+
 ### Added
 
-- Edits made to an open file by another editor are noticed. A bar offers to reload
-  it, and **Save now asks before overwriting a file that changed on disk** — it
-  previously wrote straight over another editor's work with no warning, losing it
-  silently. Browsers get no file-change events, so the handle is stat'd (via
-  `getFile().lastModified`, which does not read the contents) on window focus, on
-  a tab switch, and on a 20-second timer while visible.
-
-- Opening several files at once. The launch handler read `params.files[0]` and
+- **Several documents at once.** The launch handler read `params.files[0]` and
   discarded the rest, so selecting five files in Finder and choosing "Open With"
-  opened one of them silently. All the entry points — OS launch, the file picker
-  (now `multiple: true`), the fallback input and drag-and-drop — now take every
-  file, and a tab strip above the editor switches between them. Each document
-  keeps its own handle, so Save writes back to the right file, and switching
+  opened one of them silently. Every entry point — OS launch, the file picker
+  (now `multiple: true`), the fallback input and drag-and-drop — takes all the
+  files, and a tab strip above the editor switches between them. Each document
+  keeps its own file handle, so Save writes back to the right file, and switching
   captures the editor first so edits survive a round trip.
+- **Edits made elsewhere are noticed.** If another editor changes an open file, a
+  bar offers to reload it. Browsers get no file-change events, so the handle is
+  stat'd — via `getFile().lastModified`, which does not read the contents — on
+  window focus, on a tab switch, and on a 20-second timer while visible.
+  Reloading keeps your place and warns first if you have unsaved edits.
 - **New** adds a document instead of closing the open set, so it no longer needs
   a confirmation. An untouched welcome or blank document is reused rather than
   leaving an empty tab behind.
@@ -33,6 +35,11 @@ and in the app's **?** panel, so a downloaded file can always be identified.
 
 ### Fixed
 
+- **Save could destroy another editor's work.** It wrote straight to the file
+  with no check on whether the file had moved underneath it, so a change made
+  elsewhere was overwritten silently. Save now compares the timestamp and asks
+  before overwriting; declining leaves their version on disk and your edits in
+  the editor.
 - A multi-file launch opened only some of the files. Three causes: the manifest
   had no `launch_handler`, so Chrome's default `auto` mode could *navigate* the
   app window per launch and a navigation reloads the page, resetting the open
@@ -44,14 +51,13 @@ and in the app's **?** panel, so a downloaded file can always be identified.
   file handle, so it never matched the incoming handle; it is now matched by name
   and adopts the handle, which also means Save writes back to the file instead of
   asking where to put it.
-
-### Fixed
-
 - A file the operating system refuses to read now says so. Dismissing the picker
   and a genuinely failed read landed in the same `catch`, so a file blocked by
   macOS's Files & Folders privacy controls — which gate protected folders and
   other apps' containers, such as a Drive sync folder — appeared to do nothing at
   all. Cancelling is still silent.
+- The window title names the open file, and an installed window no longer repeats
+  the app name it already draws itself.
 
 ## [1.0.0] — 2026-10-07
 
