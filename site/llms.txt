@@ -42,4 +42,4 @@ It is made by Kingsbridge Consultancy LLC.
 
 ## Contact
 
-Custom builds, SSO, sync or on-premise deployment: support@kingsbridge-consultancy.com
+Custom builds, SSO, sync or on-premise deployment: support@freemdviewer.com
