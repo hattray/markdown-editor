@@ -1,0 +1,140 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/assets/mdviewer-icon.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#14121f; --body:#4b5563; --muted:#6b7280; --line:#e7e5ef; --brand:#2563eb;
+          --sans:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+          --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);color:var(--body);line-height:1.65;-webkit-font-smoothing:antialiased;letter-spacing:-.009em;background:#fff}
+  .wrap{max-width:760px;margin:0 auto;padding:0 24px}
+  header{border-bottom:1px solid var(--line)}
+  .nav{display:flex;align-items:center;gap:10px;height:62px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--ink);text-decoration:none;white-space:nowrap}
+  .brand img{width:28px;height:28px;border-radius:7px}
+  .nav a.back{margin-left:auto;font-size:14px;font-weight:500;color:var(--body);text-decoration:none}
+  .nav a.back:hover{color:var(--ink)}
+  main{padding:56px 0 72px}
+  h1{font-size:34px;color:var(--ink);letter-spacing:-.028em;line-height:1.15;margin-bottom:10px}
+  .updated{font-size:13.5px;color:var(--muted);margin-bottom:34px}
+  h2{font-size:19px;color:var(--ink);letter-spacing:-.02em;margin:34px 0 10px}
+  p,li{font-size:15.5px;margin-bottom:12px}
+  ul{padding-left:22px}
+  a{color:var(--brand)}
+  code{font-family:var(--mono);font-size:.88em;background:#f4f4f7;border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+  .note{border-left:3px solid var(--brand);background:#f6f9ff;padding:14px 16px;border-radius:0 8px 8px 0;margin:20px 0}
+  .note p:last-child{margin-bottom:0}
+  footer{border-top:1px solid var(--line);padding:30px 0;font-size:14px;color:var(--muted)}
+  footer nav{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px}
+  footer a{color:var(--body);text-decoration:none}
+  footer a:hover{color:var(--ink)}
+  @media(max-width:700px){h1{font-size:27px}main{padding:36px 0 48px}}
+</style>
+<title>Privacy — Free MD Viewer</title>
+<meta name="description" content="What Free MD Viewer does and does not collect. Your markdown files are never uploaded; the website itself uses privacy-preserving page-view analytics.">
+<link rel="canonical" href="https://freemdviewer.com/privacy/">
+</head><body>
+<header><div class="wrap nav">
+  <a class="brand" href="/"><img src="/assets/mdviewer-icon.png" alt="">Free MD Viewer</a>
+  <a class="back" href="/">&larr; Back to the site</a>
+</div></header>
+<main><div class="wrap">
+  <h1>Privacy</h1>
+  <p class="updated">Last updated 26 October 2026</p>
+
+  <div class="note">
+    <p><strong>The short version:</strong> the markdown files you open are never uploaded, because
+    there is nowhere to upload them to. The website around the app does collect anonymous page
+    views, and the rest of this page explains exactly what that means.</p>
+  </div>
+
+  <h2>Your documents</h2>
+  <p>
+    Free MD Viewer renders markdown in your browser. When you open a file, it is read from your disk
+    by the browser and held in the page. It is <strong>never transmitted anywhere</strong> — not to
+    us, not to a third party. There is no upload endpoint and no server-side rendering, so there is
+    no mechanism by which a document could reach us even accidentally.
+  </p>
+  <p>
+    You do not have to take that on trust. Open your browser's network tab while you work, read the
+    source with view-source or on
+    <a href="https://github.com/hattray/markdown-editor" target="_blank" rel="noopener">GitHub</a>,
+    or save the page and use it with your connection switched off.
+  </p>
+
+  <h2>What stays in your browser</h2>
+  <p>
+    The app stores a few things in your browser's <code>localStorage</code>, on your own device:
+  </p>
+  <ul>
+    <li>A draft of the document you have open, so a refresh or crash does not lose your work.</li>
+    <li>Your preferences — theme, text size, line width, and whether the contents panel is open.</li>
+  </ul>
+  <p>
+    This never leaves your browser and we cannot read it. Clearing your browser data removes it.
+    We set no cookies.
+  </p>
+
+  <h2>What this website collects</h2>
+  <p>
+    The site is served through Cloudflare, which records <strong>anonymous page views</strong>
+    (Cloudflare Web Analytics). It is cookie-less, does not fingerprint visitors and does not track
+    you across sites. It tells us how many people visited a page, roughly where from, and which
+    browser — never anything about the files you open.
+  </p>
+  <p>
+    Pages other than the app also load the Inter typeface from Google Fonts, which means Google
+    receives your IP address as part of that request. The app itself does not: every font it needs
+    is embedded in the file.
+  </p>
+  <p>
+    Cloudflare also processes server logs in the ordinary course of serving the site, as any web
+    host does. See
+    <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare's privacy policy</a>.
+  </p>
+
+  <h2>Copies you download or self-host</h2>
+  <p>
+    A downloaded <code>index.html</code>, or one you serve yourself, has no analytics of any kind —
+    the Cloudflare beacon is added by our host, not by the app. Such a copy makes no network
+    requests at all.
+  </p>
+
+  <h2>If you email us</h2>
+  <p>
+    We will have your email address and whatever you put in the message, and we keep it only to
+    answer you. We do not add you to a mailing list.
+  </p>
+
+  <h2>Children</h2>
+  <p>The tool is not directed at children and collects no personal information from anyone.</p>
+
+  <h2>Changes</h2>
+  <p>
+    If this policy changes materially, the date at the top changes with it. The history of this page
+    is public in the
+    <a href="https://github.com/hattray/markdown-editor" target="_blank" rel="noopener">repository</a>.
+  </p>
+
+  <h2>Contact</h2>
+  <p>
+    Free MD Viewer is made by Kingsbridge Consultancy LLC. Questions about privacy:
+    <a href="mailto:support@kingsbridge-consultancy.com">support@kingsbridge-consultancy.com</a>.
+  </p>
+</div></main>
+<footer><div class="wrap">
+  <nav>
+    <a href="/">Home</a>
+    <a href="/app/">Open the viewer</a>
+    <a href="/privacy/">Privacy</a>
+    <a href="/support/">Support</a>
+    <a href="https://github.com/hattray/markdown-editor" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://kingsbridge-consultancy.com/">Kingsbridge Consultancy</a>
+  </nav>
+  <p>&copy; 2026 Kingsbridge Consultancy LLC. Free MD Viewer is MIT licensed.</p>
+</div></footer>
+</body></html>

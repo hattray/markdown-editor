@@ -1,0 +1,119 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/assets/mdviewer-icon.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#14121f; --body:#4b5563; --muted:#6b7280; --line:#e7e5ef; --brand:#2563eb;
+          --sans:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+          --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);color:var(--body);line-height:1.65;-webkit-font-smoothing:antialiased;letter-spacing:-.009em;background:#fff}
+  .wrap{max-width:760px;margin:0 auto;padding:0 24px}
+  header{border-bottom:1px solid var(--line)}
+  .nav{display:flex;align-items:center;gap:10px;height:62px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--ink);text-decoration:none;white-space:nowrap}
+  .brand img{width:28px;height:28px;border-radius:7px}
+  .nav a.back{margin-left:auto;font-size:14px;font-weight:500;color:var(--body);text-decoration:none}
+  .nav a.back:hover{color:var(--ink)}
+  main{padding:56px 0 72px}
+  h1{font-size:34px;color:var(--ink);letter-spacing:-.028em;line-height:1.15;margin-bottom:10px}
+  .updated{font-size:13.5px;color:var(--muted);margin-bottom:34px}
+  h2{font-size:19px;color:var(--ink);letter-spacing:-.02em;margin:34px 0 10px}
+  p,li{font-size:15.5px;margin-bottom:12px}
+  ul{padding-left:22px}
+  a{color:var(--brand)}
+  code{font-family:var(--mono);font-size:.88em;background:#f4f4f7;border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+  .note{border-left:3px solid var(--brand);background:#f6f9ff;padding:14px 16px;border-radius:0 8px 8px 0;margin:20px 0}
+  .note p:last-child{margin-bottom:0}
+  footer{border-top:1px solid var(--line);padding:30px 0;font-size:14px;color:var(--muted)}
+  footer nav{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px}
+  footer a{color:var(--body);text-decoration:none}
+  footer a:hover{color:var(--ink)}
+  @media(max-width:700px){h1{font-size:27px}main{padding:36px 0 48px}}
+</style>
+<title>Support — Free MD Viewer</title>
+<meta name="description" content="Help with Free MD Viewer: common problems, where to report a bug, and how to ask for a custom build.">
+<link rel="canonical" href="https://freemdviewer.com/support/">
+</head><body>
+<header><div class="wrap nav">
+  <a class="brand" href="/"><img src="/assets/mdviewer-icon.png" alt="">Free MD Viewer</a>
+  <a class="back" href="/">&larr; Back to the site</a>
+</div></header>
+<main><div class="wrap">
+  <h1>Support</h1>
+  <p class="updated">Free MD Viewer is free and open source. There is no ticket queue — a real person reads these.</p>
+
+  <h2>Report a bug or ask for a feature</h2>
+  <p>
+    <a href="https://github.com/hattray/markdown-editor/issues" target="_blank" rel="noopener">Open an issue on GitHub</a>.
+    It is the fastest route, and it means other people can see the answer. Telling us which version
+    you are on helps — the <strong>?</strong> panel in the app shows it.
+  </p>
+
+  <h2>Things that come up</h2>
+
+  <h2 style="font-size:16px;margin-top:22px">&ldquo;Save downloads a copy instead of saving the file&rdquo;</h2>
+  <p>
+    Writing back to a file you opened needs the File System Access API, which today means Chrome or
+    Edge on the desktop. Everywhere else the browser will not allow it, so Save falls back to a
+    download. This is a browser limit, not a setting we can change.
+  </p>
+
+  <h2 style="font-size:16px">&ldquo;My system blocked access to that file&rdquo;</h2>
+  <p>
+    macOS gates folders such as Desktop, Documents, Downloads and other apps' containers — a Google
+    Drive or Dropbox folder, for instance. Allow the app under <strong>System Settings &rarr;
+    Privacy &amp; Security &rarr; Files &amp; Folders</strong> and try again.
+  </p>
+
+  <h2 style="font-size:16px">&ldquo;Double-clicking a .md file does not open it here&rdquo;</h2>
+  <p>
+    Install the app first (Chrome or Edge, from the install icon in the address bar), then
+    right-click a file and choose <strong>Open With</strong>. If you installed it before and it
+    stopped behaving, uninstalling and reinstalling makes the browser re-read the app's manifest,
+    which is usually the cure.
+  </p>
+
+  <h2 style="font-size:16px">&ldquo;It is slow to load the first time&rdquo;</h2>
+  <p>
+    The full build is a single ~3.7 MB file, because Mermaid and KaTeX are embedded rather than
+    fetched. If you never write diagrams or equations, the
+    <a href="https://github.com/hattray/markdown-editor/releases/latest/download/index-lite.html">lite build</a>
+    is about 287 KB and otherwise identical.
+  </p>
+
+  <h2>Use it offline or on your own servers</h2>
+  <p>
+    Download <a href="https://github.com/hattray/markdown-editor/releases/latest/download/index.html">index.html</a>
+    and open it from disk, or serve it from anywhere. It needs no backend, no build step and no
+    configuration, and the MIT licence covers commercial use.
+  </p>
+
+  <h2>Custom builds</h2>
+  <p>
+    We build tailored versions — a lite build, SSO, cloud or self-hosted sync, custom branding, or an
+    on-premise deployment. That is what Kingsbridge Consultancy does for a living, so get in touch:
+    <a href="mailto:support@kingsbridge-consultancy.com">support@kingsbridge-consultancy.com</a>.
+  </p>
+
+  <h2>Privacy</h2>
+  <p>
+    Your files are never uploaded. The details, including what the website itself records, are on the
+    <a href="/privacy/">privacy page</a>.
+  </p>
+</div></main>
+<footer><div class="wrap">
+  <nav>
+    <a href="/">Home</a>
+    <a href="/app/">Open the viewer</a>
+    <a href="/privacy/">Privacy</a>
+    <a href="/support/">Support</a>
+    <a href="https://github.com/hattray/markdown-editor" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://kingsbridge-consultancy.com/">Kingsbridge Consultancy</a>
+  </nav>
+  <p>&copy; 2026 Kingsbridge Consultancy LLC. Free MD Viewer is MIT licensed.</p>
+</div></footer>
+</body></html>

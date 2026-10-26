@@ -103,7 +103,8 @@ python3 - <<'SITEMAP'
 from datetime import datetime, timezone
 from pathlib import Path
 day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-pages = [("https://freemdviewer.com/", "1.0"), ("https://freemdviewer.com/app/", "0.8")]
+pages = [("https://freemdviewer.com/", "1.0"), ("https://freemdviewer.com/app/", "0.8"),
+         ("https://freemdviewer.com/support/", "0.4"), ("https://freemdviewer.com/privacy/", "0.3")]
 out = ['<?xml version="1.0" encoding="UTF-8"?>',
        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
 for loc, pri in pages:
