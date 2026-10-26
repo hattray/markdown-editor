@@ -20,6 +20,11 @@ and in the app's **?** panel, so a downloaded file can always be identified.
   `robots.txt` (Cloudflare's managed one is all comments and sets nothing, so it
   declared no sitemap), an `llms.txt` summary, and SoftwareApplication + FAQPage
   JSON-LD generated from the page's own FAQ so the two cannot drift apart.
+- Privacy and support pages on freemdviewer.com, so the site's footer no longer
+  sends people to the Kingsbridge site for them. The privacy page is specific
+  rather than boilerplate, and is honest about what the hosted site does collect:
+  Cloudflare Web Analytics page views on every page, and Google Fonts everywhere
+  except the app, which embeds its fonts. A downloaded copy has neither.
 
 ## [1.1.0] — 2026-10-26
 
