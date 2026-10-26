@@ -3,7 +3,10 @@
 A markdown viewer and editor that runs entirely in your browser. **Your files stay on
 your machine** — there is no upload endpoint, no account, and no server-side rendering.
 
-**Live at [kingsbridge-consultancy.com/md-viewer](https://kingsbridge-consultancy.com/md-viewer/)**
+**[freemdviewer.com](https://freemdviewer.com/)** — the landing page, with the viewer at
+[freemdviewer.com/app](https://freemdviewer.com/app/). It is also still served at
+[kingsbridge-consultancy.com/md-viewer](https://kingsbridge-consultancy.com/md-viewer/), which the
+Show HN post and installed apps point at, so that URL is kept alive.
 
 Drop a `.md` file on the page (or click **Open**), read it properly rendered, edit it with a
 live preview, and save it straight back to disk. The whole app is one self-contained
@@ -126,6 +129,9 @@ vendor/                   the bundled libraries + KaTeX .woff2 fonts
 pwa/                      manifest.json, sw.js and the icons
 tools/make-icons.py       regenerates the icons (hand-rolled PNG encoder, no dependencies)
 build.sh                  the build
+site/                     freemdviewer.com — landing page at /, the app at /app/
+wrangler.jsonc            Cloudflare config for that site (static assets only)
+deploy.sh                 builds, then deploys site/ to freemdviewer.com
 index.html                the built, self-contained app (committed)
 index-lite.html           the same app without diagrams and math (committed)
 licenses/                 full license texts for everything bundled

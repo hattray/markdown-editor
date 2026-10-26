@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free Markdown Viewer & Editor — your files never leave your device | Free MD Viewer</title>
+<meta name="description" content="Open, read and edit .md files in your browser. Mermaid diagrams, LaTeX math, syntax highlighting and footnotes — with no upload, no account and no server. Free and open source.">
+<link rel="canonical" href="https://freemdviewer.com/">
+<link rel="icon" href="/assets/mdviewer-icon.png" type="image/png">
+<meta property="og:title" content="Free Markdown Viewer & Editor — your files never leave your device">
+<meta property="og:description" content="Open, read and edit .md files in your browser. Diagrams, math and code, with nothing uploaded anywhere.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://freemdviewer.com/">
+<meta property="og:image" content="https://freemdviewer.com/assets/mdviewer-shot.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #14121f;
+    --body: #4b5563;
+    --muted: #6b7280;
+    --line: #e7e5ef;
+    --bg: #ffffff;
+    --soft: #f7f7fb;
+    --brand: #2563eb;
+    --brand-2: #4f46e5;   /* white on the old cyan was 2.43:1 — below even the large-text bar */
+    --radius: 14px;
+    --sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans);
+    color: var(--body);
+    background: var(--bg);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.009em;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  h1, h2, h3 { color: var(--ink); line-height: 1.15; letter-spacing: -0.028em; font-weight: 700; }
+  a { color: var(--brand); }
+  .grad {
+    background: linear-gradient(100deg, var(--brand), var(--brand-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* nav */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav { display: flex; align-items: center; gap: 20px; height: 62px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--ink); text-decoration: none; letter-spacing: -0.02em; white-space: nowrap; }
+  .brand img { width: 28px; height: 28px; border-radius: 7px; }
+  .brand small { font-weight: 500; color: var(--muted); font-size: 12.5px; letter-spacing: 0; }
+  .nav nav { margin-left: auto; display: flex; gap: 24px; align-items: center; }
+  /* :not(.btn) matters — '.nav nav a' outranks '.btn-primary', so without it
+     the CTA's label inherits grey and all but disappears on the gradient. */
+  .nav nav a:not(.btn) { color: var(--body); text-decoration: none; font-size: 14px; font-weight: 500; }
+  .nav nav a:not(.btn):hover { color: var(--ink); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font-weight: 600; font-size: 15px; text-decoration: none;
+    padding: 12px 22px; border-radius: 999px; border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .btn-primary { background: linear-gradient(100deg, var(--brand), var(--brand-2)); color: #fff; }
+  .btn-primary:hover { opacity: 0.92; }
+  .btn-ghost { background: #fff; color: var(--ink); border-color: var(--line); }
+  .btn-ghost:hover { border-color: #c9c6d8; }
+  .btn-sm { padding: 8px 16px; font-size: 14px; }
+  @media (max-width: 760px) {
+    .nav nav a:not(.btn) { display: none; }
+    .nav { gap: 10px; }
+    .brand small { display: none; }
+    .brand { font-size: 15px; }
+    .brand img { width: 24px; height: 24px; }
+    .nav nav { margin-left: auto; }
+  }
+
+  /* hero */
+  .hero { padding: 72px 0 24px; background: linear-gradient(180deg, #f8f9ff 0%, #fff 70%); }
+  .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 52px; align-items: center; }
+  .pill {
+    display: inline-block; font-size: 13px; font-weight: 600; color: var(--brand);
+    background: #eaf1ff; border-radius: 999px; padding: 6px 14px; margin-bottom: 22px;
+  }
+  .hero h1 { font-size: 56px; font-weight: 800; margin-bottom: 20px; }
+  .hero p.lead { font-size: 17.5px; max-width: 34em; margin-bottom: 28px; }
+  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+  .trust { font-size: 13.5px; color: var(--muted); }
+  .trust b { color: var(--body); font-weight: 500; }
+
+  /* browser frame */
+  .frame {
+    border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+    box-shadow: 0 24px 60px -24px rgba(20,18,31,0.28); background: #fff;
+  }
+  .frame-bar { display: flex; align-items: center; gap: 6px; padding: 10px 12px; background: var(--soft); border-bottom: 1px solid var(--line); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #d8d5e4; }
+  .frame img { display: block; width: 100%; height: auto; }
+
+  /* strips & sections */
+  .madefor { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--soft); margin-top: 48px; }
+  .madefor .wrap { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; padding-top: 16px; padding-bottom: 16px; font-size: 14px; }
+  .madefor span:first-child { color: var(--muted); }
+  .madefor b { color: var(--ink); font-weight: 600; }
+
+  section.band { padding: 76px 0; }
+  section.band.soft { background: var(--soft); }
+  .center { text-align: center; max-width: 720px; margin: 0 auto 46px; }
+  .center h2 { font-size: 34px; margin-bottom: 14px; }
+  .center p { font-size: 16.5px; }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; }
+  .card h3 { font-size: 20px; margin-bottom: 10px; }
+  .card p { font-size: 15px; margin-bottom: 14px; }
+  .card .ico { font-size: 24px; display: block; margin-bottom: 12px; }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; counter-reset: s; }
+  .step { position: relative; padding-top: 48px; }
+  .step::before {
+    counter-increment: s; content: counter(s);
+    position: absolute; top: 0; left: 0;
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(100deg, var(--brand), var(--brand-2)); color: #fff;
+    font-weight: 700; font-size: 15px; display: grid; place-items: center;
+  }
+  .step h3 { font-size: 17px; margin-bottom: 8px; }
+  .step p { font-size: 14.5px; }
+
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px 26px; }
+  .feat .ico { font-size: 22px; display: block; margin-bottom: 10px; }
+  .feat h3 { font-size: 16px; margin-bottom: 6px; }
+  .feat p { font-size: 14.5px; }
+
+  .privacy { background: var(--ink); color: #c8c6d6; }
+  .privacy h2 { color: #fff; }
+  .privacy .center p { color: #c8c6d6; }
+  .privacy code { font-family: var(--mono); font-size: 0.9em; background: rgba(255,255,255,0.09); padding: 2px 6px; border-radius: 5px; color: #e8e7f0; }
+  .privacy .two .card { background: rgba(255,255,255,0.045); border-color: rgba(255,255,255,0.12); }
+  .privacy .two .card h3 { color: #fff; }
+  .privacy .two .card p { color: #c8c6d6; }
+
+  .get { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .get .card { display: flex; flex-direction: column; }
+  .get .card p { flex: 1; }
+  .size { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+
+  details { border-bottom: 1px solid var(--line); padding: 18px 0; }
+  details summary { cursor: pointer; font-weight: 600; color: var(--ink); font-size: 16.5px; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::after { content: "+"; color: var(--muted); font-weight: 400; font-size: 20px; line-height: 1; }
+  details[open] summary::after { content: "\2013"; }
+  details p { margin-top: 12px; font-size: 15px; max-width: 70ch; }
+
+  footer { border-top: 1px solid var(--line); padding: 36px 0; font-size: 14px; color: var(--muted); }
+  footer nav { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 12px; }
+  footer a { color: var(--body); text-decoration: none; }
+  footer a:hover { color: var(--ink); }
+
+  @media (max-width: 900px) {
+    .hero { padding-top: 48px; }
+    .hero h1 { font-size: 38px; }
+    .hero-grid, .two, .get { grid-template-columns: 1fr; gap: 32px; }
+    .steps, .features { grid-template-columns: 1fr; }
+    .center h2 { font-size: 27px; }
+    section.band { padding: 56px 0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="/">
+      <img src="/assets/mdviewer-icon.png" alt="">
+      Free MD Viewer <small>Markdown</small>
+    </a>
+    <nav>
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#faq">FAQ</a>
+      <a class="btn btn-primary btn-sm" href="/app/">Open the viewer</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="pill">Your files never leave your device</span>
+      <h1>Read and edit markdown <span class="grad">without uploading your files</span></h1>
+      <p class="lead">
+        Drop a <code>.md</code> file and read it properly rendered — diagrams, math, tables and
+        highlighted code. Edit it and save straight back to disk. Nothing is uploaded, because
+        there is nowhere to upload it to.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="/app/">Open the viewer — free, no sign-up</a>
+        <a class="btn btn-ghost" href="https://github.com/hattray/markdown-editor" target="_blank" rel="noopener">View the source</a>
+      </div>
+      <p class="trust">
+        <b>✓ Free and open source</b> &nbsp;·&nbsp; <b>✓ Runs in your browser</b> &nbsp;·&nbsp; <b>✓ Works offline</b>
+      </p>
+    </div>
+    <div class="frame">
+      <div class="frame-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <img src="/assets/mdviewer-shot.png" alt="Free MD Viewer showing a markdown file with the source on the left and the rendered result on the right, including a table, a Mermaid flowchart and a LaTeX equation." width="1440" height="900">
+    </div>
+  </div>
+</section>
+
+<div class="madefor">
+  <div class="wrap">
+    <span>Made for</span>
+    <b>developers</b> <b>technical writers</b> <b>researchers</b> <b>students</b> <b>anyone reading AI output</b>
+  </div>
+</div>
+
+<section class="band">
+  <div class="wrap center">
+    <h2>What is Free MD Viewer?</h2>
+    <p>
+      Free MD Viewer is a markdown viewer and editor that runs entirely in your browser. It opens
+      local <code>.md</code> files and renders GitHub-flavored markdown — tables, task lists,
+      footnotes and callouts — along with Mermaid diagrams, LaTeX math and syntax-highlighted code.
+      You can edit with a live preview and save back to the original file, export to HTML, PNG or
+      PDF, and install it so double-clicking a markdown file opens it here. It never uploads your
+      documents, needs no account, and the source is public.
+    </p>
+  </div>
+</section>
+
+<section class="band soft">
+  <div class="wrap">
+    <div class="center">
+      <h2>One file. Two ways to use it.</h2>
+      <p>It opens as a reader and turns into an editor the moment you need one.</p>
+    </div>
+    <div class="two">
+      <div class="card">
+        <span class="ico">📖</span>
+        <h3>Read it properly</h3>
+        <p>
+          Double-clicking a <code>.md</code> file usually gets you a wall of raw text. Here it comes
+          out as a finished document, with a table of contents for long files and reader controls for
+          text size and line width. Diagrams and equations render in place.
+        </p>
+        <a href="/app/">Open a file →</a>
+      </div>
+      <div class="card">
+        <span class="ico">✏️</span>
+        <h3>Edit and save back</h3>
+        <p>
+          Type on the left, watch the result on the right. In Chrome and Edge, Save writes straight
+          back to the file you opened — no download step, no copy in your Downloads folder. Open
+          several files at once and switch between them.
+        </p>
+        <a href="/app/">Try editing →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="how">
+  <div class="wrap">
+    <div class="center">
+      <h2>From file to finished read in seconds</h2>
+      <p>No install, no sign-up, no upload.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <h3>Drop a file in</h3>
+        <p>Drag a <code>.md</code> file anywhere on the page, or click Open. Nothing is sent anywhere — the file is read in your browser.</p>
+      </div>
+      <div class="step">
+        <h3>Read it rendered</h3>
+        <p>Headings, tables, task lists, footnotes, callouts, highlighted code, Mermaid diagrams and LaTeX math, all in place.</p>
+      </div>
+      <div class="step">
+        <h3>Edit, export, or just close it</h3>
+        <p>Save back to the same file, or export the result as a self-contained HTML page, a PNG, or a PDF.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band soft" id="features">
+  <div class="wrap">
+    <div class="center">
+      <h2>Everything a markdown file can throw at you</h2>
+      <p>Built on marked, KaTeX, Mermaid and highlight.js — all bundled, none fetched at runtime.</p>
+    </div>
+    <div class="features">
+      <div class="feat"><span class="ico">📊</span><h3>Mermaid diagrams</h3><p>Flowcharts, sequence diagrams and the rest, rendered from a code fence and downloadable as SVG.</p></div>
+      <div class="feat"><span class="ico">∑</span><h3>LaTeX math</h3><p>Inline and display equations via KaTeX, with a palette of templates if you would rather not recall the syntax.</p></div>
+      <div class="feat"><span class="ico">🎨</span><h3>Syntax highlighting</h3><p>Fenced code in a GitHub-style palette, in both light and dark themes, with a one-click copy button.</p></div>
+      <div class="feat"><span class="ico">🔖</span><h3>Footnotes &amp; callouts</h3><p><code>[^1]</code> references with back-links, and GitHub callouts like <code>&gt; [!NOTE]</code>.</p></div>
+      <div class="feat"><span class="ico">🗂️</span><h3>Several files at once</h3><p>Select a folder's worth of markdown and switch between them in tabs. Each saves back to its own file.</p></div>
+      <div class="feat"><span class="ico">🔍</span><h3>Find &amp; replace</h3><p>Search the source, not just the rendered page, with replace-all as a single undo step.</p></div>
+      <div class="feat"><span class="ico">📤</span><h3>Export anywhere</h3><p>Self-contained HTML, a PNG of the preview, or a real selectable-text PDF. No watermarks, no page limits.</p></div>
+      <div class="feat"><span class="ico">🔄</span><h3>Notices outside edits</h3><p>If another editor changes your file, it offers to reload — and never overwrites their work without asking.</p></div>
+      <div class="feat"><span class="ico">⚡</span><h3>Installable &amp; offline</h3><p>Install it in Chrome or Edge and <code>.md</code> files open here on double-click, with or without a connection.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band privacy" id="privacy">
+  <div class="wrap">
+    <div class="center">
+      <h2>A privacy claim you can check</h2>
+      <p>
+        Most online markdown viewers upload your document to a server to render it. For work
+        documents and private notes, that is a real cost of a &ldquo;free&rdquo; tool. This one has no
+        upload path at all.
+      </p>
+    </div>
+    <div class="two">
+      <div class="card">
+        <h3>There is no server to trust</h3>
+        <p>
+          The whole app is a single HTML file with every library embedded. Rendering happens in your
+          browser. There is no backend that could receive your document, even by accident — so this
+          needs no privacy policy to believe.
+        </p>
+      </div>
+      <div class="card">
+        <h3>Verify it yourself</h3>
+        <p>
+          Open your browser's network tab and watch it while you work. Read the source with
+          view-source, or on <a href="https://github.com/hattray/markdown-editor" target="_blank" rel="noopener" style="color:#9ec5ff">GitHub</a> — only
+          the vendored libraries are minified. Save the page and run it with no connection at all.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="center">
+      <h2>Use it however you like</h2>
+      <p>Hosted, downloaded, or self-hosted. It is MIT licensed either way.</p>
+    </div>
+    <div class="get">
+      <div class="card">
+        <h3>Open it now</h3>
+        <p>Nothing to install. Works in any current browser.</p>
+        <a class="btn btn-primary" href="/app/">Open the viewer</a>
+      </div>
+      <div class="card">
+        <h3>Download the file</h3>
+        <p>One self-contained <code>index.html</code>. Keep it, email it, run it from disk forever.</p>
+        <a class="btn btn-ghost" href="https://github.com/hattray/markdown-editor/releases/latest/download/index.html">Download <span class="size">~3.7 MB</span></a>
+      </div>
+      <div class="card">
+        <h3>Or the lite build</h3>
+        <p>The same app without Mermaid and KaTeX, for anyone who writes neither.</p>
+        <a class="btn btn-ghost" href="https://github.com/hattray/markdown-editor/releases/latest/download/index-lite.html">Download lite <span class="size">~287 KB</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band soft" id="faq">
+  <div class="wrap" style="max-width:860px">
+    <div class="center"><h2>Questions</h2></div>
+
+    <details open>
+      <summary>Are my files really not uploaded?</summary>
+      <p>
+        Yes. Every library the app needs is embedded in the page itself, so it makes no requests of
+        its own while you use it. Your file is read by the browser from your disk and never sent
+        anywhere. You can confirm this in your browser's network tab, or by saving the page and
+        using it with your connection switched off.
+      </p>
+    </details>
+
+    <details>
+      <summary>Do I need to install anything or create an account?</summary>
+      <p>
+        No to both. Open the page and drop a file in. You can optionally install it in Chrome or
+        Edge, which lets markdown files open here on double-click and makes it work offline, but
+        that is a convenience rather than a requirement.
+      </p>
+    </details>
+
+    <details>
+      <summary>Can I edit a file and save it back?</summary>
+      <p>
+        In Chrome and Edge, yes — Save writes straight back to the file you opened, using the File
+        System Access API. Other browsers fall back to a normal download, since they do not support
+        writing to a file you picked.
+      </p>
+    </details>
+
+    <details>
+      <summary>What markdown does it support?</summary>
+      <p>
+        GitHub-flavored markdown — tables, task lists, strikethrough and fenced code — plus
+        footnotes, GitHub callouts, Mermaid diagrams, LaTeX math via KaTeX, and syntax highlighting
+        for code. Anything KaTeX and Mermaid support, it supports.
+      </p>
+    </details>
+
+    <details>
+      <summary>Can I export to PDF?</summary>
+      <p>
+        Yes, through your browser's own print dialog, which keeps the text selectable rather than
+        producing a screenshot. You can also export a self-contained HTML file or a PNG of the
+        rendered page, with no watermarks and no page limits.
+      </p>
+    </details>
+
+    <details>
+      <summary>Is it really free? What is the catch?</summary>
+      <p>
+        It is free and MIT licensed, with no ads, no account and no paid tier. It is small enough to
+        cost nothing to run, since there is no server. If you need something it does not do — a
+        custom build, SSO, sync, an on-premise deployment — that is what we do for a living, and you
+        can email us.
+      </p>
+    </details>
+
+    <details>
+      <summary>Can I self-host it or use it inside my company?</summary>
+      <p>
+        Yes. Download <code>index.html</code> and serve it from anywhere, or open it from disk. It
+        needs no backend, no build step and no configuration. The MIT licence covers commercial use.
+        For a branded or customised build, email
+        <a href="mailto:support@kingsbridge-consultancy.com">support@kingsbridge-consultancy.com</a>.
+      </p>
+    </details>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <nav>
+      <a href="https://kingsbridge-consultancy.com/">Kingsbridge Consultancy</a>
+      <a href="/app/">Open the viewer</a>
+      <a href="https://github.com/hattray/markdown-editor" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://kingsbridge-consultancy.com/privacy.html">Privacy Policy</a>
+      <a href="https://kingsbridge-consultancy.com/support.html">Support</a>
+    </nav>
+    <p>
+      Free MD Viewer is MIT licensed. Questions or custom builds:
+      <a href="mailto:support@kingsbridge-consultancy.com">support@kingsbridge-consultancy.com</a>.
+    </p>
+    <p style="margin-top:8px">&copy; 2026 Kingsbridge Consultancy LLC. All rights reserved.</p>
+  </div>
+</footer>
+
+</body>
+</html>

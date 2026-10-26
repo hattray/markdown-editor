@@ -9,6 +9,14 @@ and in the app's **?** panel, so a downloaded file can always be identified.
 
 ## [Unreleased]
 
+### Added
+
+- A landing page, served from `site/` at **freemdviewer.com**, with the viewer at
+  `/app/`. The app's manifest uses relative paths, so the PWA scopes itself to
+  `/app/` with no changes. The viewer is still served at
+  `kingsbridge-consultancy.com/md-viewer/` as well — the Show HN post links there
+  and an installed app starts there, so redirecting it would break both.
+
 ## [1.1.0] — 2026-10-26
 
 Multiple documents, and the app now notices when a file changes underneath it.

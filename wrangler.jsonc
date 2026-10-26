@@ -1,0 +1,18 @@
+{
+  // Serves freemdviewer.com: the landing page at the root, the viewer at /app/.
+  // Static assets only — there is no Worker script, the same shape as the
+  // Kingsbridge site. ./site is produced by build.sh, so CI must build first.
+  //
+  // The Kingsbridge site lives in the same Cloudflare account, so `wrangler login`
+  // (which is global and single-account) may point elsewhere; CI passes the
+  // account token explicitly and account_id is pinned so a wrong-account deploy
+  // fails loudly rather than publishing somewhere unexpected.
+  "name": "freemdviewer-site",
+  "account_id": "40f64347fb35adf8ef78438efde31b20",
+  "compatibility_date": "2026-06-01",
+  "assets": { "directory": "./site" },
+  "routes": [
+    { "pattern": "freemdviewer.com", "custom_domain": true },
+    { "pattern": "www.freemdviewer.com", "custom_domain": true }
+  ]
+}

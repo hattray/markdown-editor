@@ -1,1 +1,4 @@
 .DS_Store
+
+# assembled by build.sh from index.html + pwa/
+site/app/

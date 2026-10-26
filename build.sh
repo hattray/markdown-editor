@@ -90,3 +90,10 @@ PY
 # PWA sidecars that make it installable and register it for .md files.
 cp pwa/manifest.json pwa/sw.js pwa/icon-192.png pwa/icon-512.png pwa/icon-maskable-512.png .
 echo "copied PWA files (manifest, service worker, icons)"
+
+# site/ is what freemdviewer.com serves: the landing page at the root and the
+# app at /app/. The manifest's paths are all relative, so the PWA scopes itself
+# to /app/ with no changes.
+mkdir -p site/app
+cp index.html pwa/manifest.json pwa/sw.js pwa/icon-192.png pwa/icon-512.png pwa/icon-maskable-512.png site/app/
+echo "assembled site/ (landing page + app at /app/)"
