@@ -177,6 +177,110 @@
     section.band { padding: 56px 0; }
   }
 </style>
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Free MD Viewer",
+    "applicationCategory": "BrowserApplication",
+    "applicationSubCategory": "Markdown viewer and editor",
+    "operatingSystem": "Any (runs in a web browser)",
+    "url": "https://freemdviewer.com/",
+    "downloadUrl": "https://github.com/hattray/markdown-editor/releases/latest",
+    "softwareVersion": "1.1.0",
+    "license": "https://opensource.org/licenses/MIT",
+    "isAccessibleForFree": true,
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "description": "A markdown viewer and editor that runs entirely in your browser. Opens local .md files and renders Mermaid diagrams, LaTeX math, tables and highlighted code, and saves edits back to the original file. Nothing is uploaded — there is no server.",
+    "featureList": [
+      "Renders GitHub-flavored markdown",
+      "Mermaid diagrams",
+      "LaTeX math via KaTeX",
+      "Syntax highlighting",
+      "Footnotes and GitHub callouts",
+      "Saves back to the original file",
+      "Export to HTML, PNG and PDF",
+      "Opens several files at once",
+      "Find and replace",
+      "Works offline",
+      "No account and no upload"
+    ],
+    "screenshot": "https://freemdviewer.com/assets/mdviewer-shot.png",
+    "author": {
+      "@type": "Organization",
+      "name": "Kingsbridge Consultancy LLC",
+      "url": "https://kingsbridge-consultancy.com/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Are my files really not uploaded?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Every library the app needs is embedded in the page itself, so it makes no requests of its own while you use it. Your file is read by the browser from your disk and never sent anywhere. You can confirm this in your browser's network tab, or by saving the page and using it with your connection switched off."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Do I need to install anything or create an account?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No to both. Open the page and drop a file in. You can optionally install it in Chrome or Edge, which lets markdown files open here on double-click and makes it work offline, but that is a convenience rather than a requirement."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I edit a file and save it back?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "In Chrome and Edge, yes — Save writes straight back to the file you opened, using the File System Access API. Other browsers fall back to a normal download, since they do not support writing to a file you picked."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What markdown does it support?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "GitHub-flavored markdown — tables, task lists, strikethrough and fenced code — plus footnotes, GitHub callouts, Mermaid diagrams, LaTeX math via KaTeX, and syntax highlighting for code. Anything KaTeX and Mermaid support, it supports."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I export to PDF?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, through your browser's own print dialog, which keeps the text selectable rather than producing a screenshot. You can also export a self-contained HTML file or a PNG of the rendered page, with no watermarks and no page limits."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is it really free? What is the catch?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "It is free and MIT licensed, with no ads, no account and no paid tier. It is small enough to cost nothing to run, since there is no server. If you need something it does not do — a custom build, SSO, sync, an on-premise deployment — that is what we do for a living, and you can email us."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I self-host it or use it inside my company?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Download index.html and serve it from anywhere, or open it from disk. It needs no backend, no build step and no configuration. The MIT licence covers commercial use. For a branded or customised build, email support@kingsbridge-consultancy.com."
+        }
+      }
+    ]
+  }
+]
+</script>
 </head>
 <body>
 

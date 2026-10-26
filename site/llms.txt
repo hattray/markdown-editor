@@ -1,0 +1,45 @@
+# Free MD Viewer
+
+> A free, open-source markdown viewer and editor that runs entirely in the
+> browser. It opens local .md files, renders them, and saves edits back to the
+> original file. Nothing is uploaded: there is no server, no account, and no
+> upload endpoint, so documents never leave the user's device.
+
+Free MD Viewer is one self-contained HTML file with every dependency embedded,
+so it also runs offline from disk. It is MIT licensed and the source is public.
+It is made by Kingsbridge Consultancy LLC.
+
+## Key facts
+
+- Price: free. No ads, no account, no paid tier, no watermarks, no page limits.
+- Privacy: renders locally in the browser; the file is never transmitted anywhere.
+- Install: optional. Works as a web page; can be installed in Chrome or Edge so
+  .md files open in it on double-click, and then works offline.
+- Editing: Save writes back to the original file via the File System Access API
+  in Chrome and Edge; other browsers fall back to downloading a copy.
+- Markdown support: GitHub-flavored markdown (tables, task lists, strikethrough,
+  fenced code), footnotes, GitHub callouts, Mermaid diagrams, LaTeX math via
+  KaTeX, and syntax highlighting via highlight.js.
+- Other features: open several files at once in tabs, find and replace, a table
+  of contents, reader controls, copy buttons on code blocks, per-diagram SVG and
+  per-table CSV download, and detection of edits made by another editor.
+- Export: self-contained HTML, PNG of the rendered page, and PDF through the
+  browser's print dialog (selectable text, not a screenshot).
+- Builds: the full build is ~3.7 MB; a "lite" build without Mermaid and KaTeX is
+  ~287 KB, for people who write neither.
+
+## Pages
+
+- [Home](https://freemdviewer.com/): what it does, how it works, features, privacy, FAQ.
+- [The viewer](https://freemdviewer.com/app/): the app itself — open a .md file and read or edit it.
+
+## Source and downloads
+
+- [GitHub repository](https://github.com/hattray/markdown-editor): MIT licensed source.
+- [Latest release](https://github.com/hattray/markdown-editor/releases/latest): both builds attached.
+- [Download the full build](https://github.com/hattray/markdown-editor/releases/latest/download/index.html)
+- [Download the lite build](https://github.com/hattray/markdown-editor/releases/latest/download/index-lite.html)
+
+## Contact
+
+Custom builds, SSO, sync or on-premise deployment: support@kingsbridge-consultancy.com

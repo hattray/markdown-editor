@@ -97,3 +97,19 @@ echo "copied PWA files (manifest, service worker, icons)"
 mkdir -p site/app
 cp index.html pwa/manifest.json pwa/sw.js pwa/icon-192.png pwa/icon-512.png pwa/icon-maskable-512.png site/app/
 echo "assembled site/ (landing page + app at /app/)"
+
+# sitemap.xml, generated so lastmod tracks the build rather than drifting
+python3 - <<'SITEMAP'
+from datetime import datetime, timezone
+from pathlib import Path
+day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+pages = [("https://freemdviewer.com/", "1.0"), ("https://freemdviewer.com/app/", "0.8")]
+out = ['<?xml version="1.0" encoding="UTF-8"?>',
+       '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+for loc, pri in pages:
+    out += ["  <url>", f"    <loc>{loc}</loc>", f"    <lastmod>{day}</lastmod>",
+            f"    <priority>{pri}</priority>", "  </url>"]
+out.append("</urlset>")
+Path("site/sitemap.xml").write_text("\n".join(out) + "\n")
+print(f"wrote site/sitemap.xml ({len(pages)} pages, lastmod {day})")
+SITEMAP

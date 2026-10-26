@@ -1,0 +1,18 @@
+# freemdviewer.com — a free, open-source markdown viewer and editor.
+# Everything here is public marketing copy; crawl it freely.
+
+User-agent: *
+Allow: /
+
+# Cloudflare serves a managed robots.txt when this file is absent. That one is
+# all comments and sets nothing, so this replaces it. Content signals below use
+# Cloudflare's vocabulary (https://contentsignals.org).
+#
+#   search:   building a search index and returning links and short excerpts
+#   ai-input: using content to ground or answer a generative AI query
+#   ai-train: training or fine-tuning a model
+#
+# This is a free tool we want found and recommended, so all three are yes.
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+
+Sitemap: https://freemdviewer.com/sitemap.xml

@@ -16,6 +16,10 @@ and in the app's **?** panel, so a downloaded file can always be identified.
   `/app/` with no changes. The viewer is still served at
   `kingsbridge-consultancy.com/md-viewer/` as well — the Show HN post links there
   and an installed app starts there, so redirecting it would break both.
+- SEO and answer-engine files for that site: a generated `sitemap.xml`, a real
+  `robots.txt` (Cloudflare's managed one is all comments and sets nothing, so it
+  declared no sitemap), an `llms.txt` summary, and SoftwareApplication + FAQPage
+  JSON-LD generated from the page's own FAQ so the two cannot drift apart.
 
 ## [1.1.0] — 2026-10-26
 
