@@ -87,6 +87,7 @@
     flex: none;
   }
   .brand {
+    text-decoration: none;
     font-weight: 600;
     font-size: 13px;
     letter-spacing: -0.01em;
@@ -97,6 +98,7 @@
     white-space: nowrap;
   }
   .brand svg { width: 16px; height: 16px; color: var(--accent); }
+  .brand:hover { color: var(--accent); }
   #lite-tag {
     font-size: 9.5px;
     font-weight: 600;
@@ -859,10 +861,11 @@
 <body data-view="split">
 
 <header>
-  <span class="brand">
+  <a class="brand" href="https://freemdviewer.com/" target="_blank" rel="noopener"
+     title="freemdviewer.com — opens in a new tab so your work here is untouched">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="M7 15V9l2.5 3L12 9v6"/><path d="M16 13l2 2 2-2"/><path d="M18 9v6"/></svg>
     Free MD Viewer<span id="lite-tag" hidden>lite</span>
-  </span>
+  </a>
   <span class="filename-wrap">
     <input id="filename" value="untitled.md" spellcheck="false" autocomplete="off" title="File name (click to rename)">
     <span class="dirty-dot" id="dirty-dot" title="Unsaved changes"></span>

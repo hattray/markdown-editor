@@ -11,6 +11,10 @@ and in the app's **?** panel, so a downloaded file can always be identified.
 
 ### Added
 
+- The app's name in the toolbar links to freemdviewer.com. It opens in a new tab
+  rather than navigating the app, so an open document and any unsaved edits are
+  left alone.
+
 - A landing page, served from `site/` at **freemdviewer.com**, with the viewer at
   `/app/`. The app's manifest uses relative paths, so the PWA scopes itself to
   `/app/` with no changes. The viewer is still served at
