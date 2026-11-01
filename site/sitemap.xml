@@ -2,22 +2,22 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://freemdviewer.com/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://freemdviewer.com/app/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://freemdviewer.com/support/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <priority>0.4</priority>
   </url>
   <url>
     <loc>https://freemdviewer.com/privacy/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <priority>0.3</priority>
   </url>
 </urlset>

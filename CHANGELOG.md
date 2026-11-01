@@ -30,6 +30,23 @@ and in the app's **?** panel, so a downloaded file can always be identified.
   Cloudflare Web Analytics page views on every page, and Google Fonts everywhere
   except the app, which embeds its fonts. A downloaded copy has neither.
 
+### Fixed
+
+- **Find only accepted one letter at a time.** Every keystroke in the find box
+  moved the caret to the match, which focused the editor and took focus out of
+  the box, so searching for a word meant typing a letter and clicking back in
+  for the next one. Find now leaves focus where you put it: typing, Enter,
+  Shift+Enter and the arrows all keep the find box active, and Escape hands the
+  editor back. Replace briefly focuses the editor — `execCommand` only acts on
+  the focused element, and that is what keeps the edit on the native undo
+  stack — then returns focus so Replace can be pressed again.
+- Matches are shaded in the editor instead of relying on the text selection.
+  Chrome stops painting a textarea's selection the moment it loses focus, so
+  with focus left in the find box there was nothing to see; a layer behind the
+  textarea now marks every match, with the current one picked out. It follows
+  the editor's scrolling and re-wraps with it, and is skipped on documents over
+  400,000 characters so typing stays responsive.
+
 ## [1.1.0] — 2026-10-26
 
 Multiple documents, and the app now notices when a file changes underneath it.
