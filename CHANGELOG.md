@@ -46,6 +46,13 @@ and in the app's **?** panel, so a downloaded file can always be identified.
   textarea now marks every match, with the current one picked out. It follows
   the editor's scrolling and re-wraps with it, and is skipped on documents over
   400,000 characters so typing stays responsive.
+- **Stepping through matches now scrolls to them in wrapped documents.** The
+  scroll target was derived by counting newlines, which treats a long line that
+  soft-wraps over a dozen rows as one row — in a file of long lines it pointed
+  thousands of pixels short, so the counter advanced while the view barely
+  moved. Focusing the editor used to hide this, because the browser scrolled to
+  the selection itself. The position is now read from the match's own marker in
+  the highlight layer, which wraps exactly as the textarea does.
 
 ## [1.1.0] — 2026-10-26
 

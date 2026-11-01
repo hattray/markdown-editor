@@ -6520,16 +6520,21 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     if (matchIdx < 0 || !matches.length) return;
     const start = matches[matchIdx], end = start + findInput.value.length;
     // deliberately no editor.focus() - that would pull focus out of the find box
-    // after every keystroke; an unfocused textarea still paints its selection
+    // after every keystroke; the layer below shades the match instead
     editor.setSelectionRange(start, end);
-    // approximate, but enough to bring a match on screen in a wrapped textarea
-    const line = editor.value.slice(0, start).split("\n").length - 1;
+    paintCount();                        // repaint first, so mark.cur is this match
     const lh = parseFloat(getComputedStyle(editor).lineHeight) || 20;
-    const top = line * lh;
+    const cur = findHl.querySelector("mark.cur");
+    // The layer wraps exactly as the textarea does, so the mark's own offset is
+    // the true position. Counting newlines is not: a logical line that soft-wraps
+    // over several rows is still counted once, which lands far short of the match
+    // in a document of long lines.
+    const top = cur ? cur.offsetTop
+                    : (editor.value.slice(0, start).split("\n").length - 1) * lh;
     if (top < editor.scrollTop || top > editor.scrollTop + editor.clientHeight - lh * 2) {
       editor.scrollTop = Math.max(0, top - editor.clientHeight / 3);
+      syncHighlights();
     }
-    paintCount();
   }
   function stepMatch(dir) {
     if (!matches.length) return;
