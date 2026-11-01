@@ -7,6 +7,26 @@ All notable changes to Free MD Viewer. This project follows
 The version and build date of any copy are in the comment at the top of the file
 and in the app's **?** panel, so a downloaded file can always be identified.
 
+## [Unreleased]
+
+### Fixed
+
+- **Find highlights landed on the wrong words.** The layer that shades matches
+  is a `div`, and a `div` inherits text properties that a `textarea` does not:
+  the UA stylesheet resets them on form controls. `body` sets
+  `letter-spacing: -0.006em`, which the textarea ignored and the layer applied,
+  so the two wrapped at different points and every mark after the first
+  difference sat a line or more away from the word it marked. On a 23,000
+  character file of mixed English and Devanagari the layer came out 45px — two
+  lines — short. The layer now resets letter-spacing, word-spacing, text-indent,
+  text-transform, text-shadow and unicode-bidi to the textarea's values, and
+  mirrors the textarea's trailing empty line, which CSS otherwise drops.
+  Scrolling to a match is measured from the same layer, so it was off by the
+  same amount.
+- The layer is now checked against the textarea's own height each time it is
+  painted, and dropped if the two ever disagree. Showing nothing is better than
+  pointing at the wrong word.
+
 ## [1.1.1] — 2026-11-01
 
 Find keeps focus where you put it, and actually scrolls to the match. Plus the

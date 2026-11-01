@@ -262,6 +262,16 @@
     z-index: 0;
     white-space: pre-wrap;
     overflow-wrap: break-word;
+    /* A textarea resets these inherited properties in the UA stylesheet; a div
+       does not. body sets letter-spacing: -0.006em, which the textarea ignores
+       and this layer would not - about 6px over a line, so the two wrap at
+       different points and every mark after the first drift lands wrong. */
+    letter-spacing: normal;
+    word-spacing: normal;
+    text-indent: 0;
+    text-transform: none;
+    text-shadow: none;
+    unicode-bidi: normal;
   }
   #editor, #editor-hl {
     font-family: var(--mono);
@@ -6488,6 +6498,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     c.classList.toggle("none", !!findInput.value && !matches.length);
   }
   const findHl = $("editor-hl");
+  let hlAligned = true;
   // keep the layer's text box the same size as the textarea's (clientWidth
   // excludes the scrollbar, so the two wrap identically) and in step with it
   function syncHighlights() {
@@ -6512,8 +6523,15 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
              escapeHtml(v.slice(m, m + q.length)) + "</mark>";
       last = m + q.length;
     }
-    findHl.innerHTML = out + escapeHtml(v.slice(last));
+    // the trailing "\n" mirrors the textarea's final empty line, which CSS
+    // would otherwise drop - without it the two differ by one line at the end
+    findHl.innerHTML = out + escapeHtml(v.slice(last)) + "\n";
     syncHighlights();
+    // If the layer ever wraps differently from the textarea the marks are in the
+    // wrong places and so is anything measured from them. Showing nothing beats
+    // pointing at the wrong word.
+    hlAligned = Math.abs(findHl.scrollHeight - editor.scrollHeight) <= 1;
+    if (!hlAligned) findHl.textContent = "";
   }
 
   function revealMatch() {
