@@ -7,7 +7,9 @@ All notable changes to Free MD Viewer. This project follows
 The version and build date of any copy are in the comment at the top of the file
 and in the app's **?** panel, so a downloaded file can always be identified.
 
-## [Unreleased]
+## [1.1.2] — 2026-11-01
+
+Find highlights land on the right words.
 
 ### Fixed
 
